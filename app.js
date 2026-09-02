@@ -13,7 +13,7 @@ const ROLES_LIST = [
 const STORAGE_KEY_PERSONNEL_DB = "military_roster_personnel_db";
 
 // Default Initial Personnel Database (ฐานข้อมูลกำลังพลเริ่มต้น)
-const DEFAULT_PERSONNEL_DB = [
+const DEFAULT_PERSONNEL_DB = [];
   // หมวด 1
   { id: "p1", name: "อภิวัฒน์", platoon: "หมวด 1", batch: "1/67", role: "บก.พัน", dutyType: "เวรกองรักษาการ" },
   { id: "p2", name: "พุฒิพงศ์", platoon: "หมวด 1", batch: "2/67", role: "สื่อสาร", dutyType: "เวรกองรักษาการ" },

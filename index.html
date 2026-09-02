@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดตารางเวรกองรักษาการและ ผช.สิบเวร</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <h1>
+        <i class="fa-solid fa-shield-halved"></i>
+        ระบบจัดตารางเวรกองรักษาการ
+        <span class="badge-tag">ระบบสุ่มเวรเฉลี่ยเท่ากัน</span>
+      </h1>
+      <div class="header-actions no-print">
+        <button class="btn btn-purple" onclick="openPersonnelModal()">
+          <i class="fa-solid fa-users-gear"></i> ฐานข้อมูลกำลังพล (หลังบ้าน)
+        </button>
+        <div id="scheduleViewActions" style="display: none; gap: 8px;">
+          <button class="btn btn-secondary" onclick="goToReviewView()">
+            <i class="fa-solid fa-arrow-left"></i> กลับไปแก้ไขสายงาน
+          </button>
+          <button class="btn btn-primary" onclick="randomizeSchedule(); renderAll();">
+            <i class="fa-solid fa-dice"></i> สุ่มเวรใหม่
+          </button>
+          <button class="btn btn-success" onclick="exportToExcel()">
+            <i class="fa-solid fa-file-excel"></i> ส่งออก Excel
+          </button>
+          <button class="btn btn-accent" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> พิมพ์ / PDF
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LANDING / PERSONNEL WORK REVIEW    -->
+    <!-- (หน้าแรก: ตรวจสอบและแก้ไขสายงานกำลังพลก่อนสร้างตาราง) -->
+    <!-- ========================================== -->
+    <div id="viewReview" class="view-container active">
+      
+      <div class="review-card">
+        
+        <div class="review-header-title">
+          <div>
+            <h2>
+              <i class="fa-solid fa-clipboard-user" style="color: var(--primary-color);"></i>
+              ตรวจสอบและมอบหมายสายงานกำลังพลประจำหมวด
+            </h2>
+            <span style="font-size: 0.88rem; color: #64748b;">
+              เลือกหมวดที่จะจัดเข้าเวร และสามารถเปลี่ยนหน้าที่/สายงานของทหารแต่ละนายได้ทันทีก่อนกดสร้างตาราง
+            </span>
+          </div>
+          <div>
+            <button class="btn btn-secondary btn-sm" onclick="openPersonnelModal()">
+              <i class="fa-solid fa-user-plus"></i> เพิ่มทหารใหม่
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. Platoon Selector Pills -->
+        <div class="platoon-selection-bar">
+          <span style="font-weight: 700; color: #334155; font-size: 0.95rem;">
+            <i class="fa-solid fa-users-viewfinder"></i> เลือกหมวดที่จะจัดเข้าเวร:
+          </span>
+          <div class="platoon-pills-group" id="platoonPillsGroup">
+            <button class="platoon-pill active" onclick="setSelectedPlatoonFilter('หมวด 1', this)">
+              หมวด 1 <span class="count" id="countPill1">0</span>
+            </button>
+            <button class="platoon-pill" onclick="setSelectedPlatoonFilter('หมวด 2', this)">
+              หมวด 2 <span class="count" id="countPill2">0</span>
+            </button>
+            <button class="platoon-pill" onclick="setSelectedPlatoonFilter('หมวด 3', this)">
+              หมวด 3 <span class="count" id="countPill3">0</span>
+            </button>
+            <button class="platoon-pill" onclick="setSelectedPlatoonFilter('all', this)">
+              ทุกหมวด <span class="count" id="countPillAll">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Date Range Configuration -->
+        <div class="date-controls-bar">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>หัวข้อตาราง</label>
+            <input type="text" id="titleInput" class="form-control" value="เวรกองรักษาการ">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>วันเริ่มต้น</label>
+            <input type="number" id="startDay" class="form-control" min="1" max="31" value="1">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>วันสิ้นสุด</label>
+            <input type="number" id="endDay" class="form-control" min="1" max="31" value="10">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>เดือน</label>
+            <select id="monthSelect" class="form-control"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>ปี (พ.ศ.)</label>
+            <input type="number" id="yearInput" class="form-control" value="2569">
+          </div>
+        </div>
+
+        <!-- 3. Search and Quick Info -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 0.88rem; color: #475569;">
+            💡 <i><b>คำแนะนำ:</b> คนที่อยู่ <b>"พัฒนากองร้อย"</b> จะอยู่กลุ่มบนเข้าเวรวันปกติ ส่วนคน <b>"นอกพัฒนากองร้อย"</b> จะอยู่กลุ่มล่างเข้าเฉพาะวันเสาร์</i>
+          </div>
+          <div style="width: 250px;">
+            <input type="text" id="searchReviewName" class="form-control" placeholder="🔍 ค้นหาชื่อในหมวด..." oninput="renderReviewPersonnelTable()">
+          </div>
+        </div>
+
+        <!-- 4. In-Place Editable Personnel Table -->
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 50px; text-align: center;">ลำดับ</th>
+                <th style="width: 100px;">หมวด</th>
+                <th style="width: 180px;">ชื่อ - สกุล</th>
+                <th style="width: 80px;">ผลัด</th>
+                <th style="width: 180px;">หน้าที่ / สายงาน (แก้ไขได้ทันที)</th>
+                <th style="width: 170px;">ประเภทเวรที่เข้า</th>
+                <th>ตำแหน่งจัดเวรในตารางอัตโนมัติ</th>
+              </tr>
+            </thead>
+            <tbody id="reviewPersonnelTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- 5. Bottom Sticky Action Bar -->
+      <div class="review-bottom-bar">
+        <div class="review-stats-summary">
+          <div class="stat-chip">
+            <span>🛡️ กำลังพลหลัก (พัฒนากองร้อย):</span>
+            <b id="summaryMainCount">0</b> นาย
+          </div>
+          <div class="stat-chip">
+            <span>🛡️ วันเสาร์ (นอกกองร้อย):</span>
+            <b id="summarySatCount">0</b> นาย
+          </div>
+          <div class="stat-chip">
+            <span>🎖️ ผช.สิบเวร:</span>
+            <b id="summaryAsstCount">0</b> นาย
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-success btn-lg" onclick="generateAndShowRoster()">
+            <i class="fa-solid fa-play"></i> <b>สร้างตารางเวรกองรักษาการ</b>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: SCHEDULE ROSTER TABLE VIEW         -->
+    <!-- (หน้าแสดงตารางเวรที่สร้างขึ้น ตรงตามแบบ 100%) -->
+    <!-- ========================================== -->
+    <div id="viewSchedule" class="view-container">
+      
+      <div class="schedule-paper-card">
+        
+        <div class="table-toolbar no-print">
+          <div>
+            <button class="btn btn-secondary btn-sm" onclick="goToReviewView()">
+              <i class="fa-solid fa-arrow-left"></i> ย้อนกลับไปแก้ไขรายชื่อ / สายงาน
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary btn-sm" onclick="randomizeSchedule(); renderAll();">
+              <i class="fa-solid fa-rotate"></i> สุ่มเวรใหม่
+            </button>
+            <button class="btn btn-success btn-sm" onclick="exportToExcel()">
+              <i class="fa-solid fa-file-excel"></i> ส่งออก Excel
+            </button>
+            <button class="btn btn-accent btn-sm" onclick="window.print()">
+              <i class="fa-solid fa-print"></i> พิมพ์ / PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Schedule Paper (A4 Landscape Formatted) -->
+        <div class="schedule-paper" id="printableArea">
+          <!-- Paper Title Header -->
+          <h2 class="paper-title" id="paperTitle">
+            เวรกองรักษาการ ระหว่างวันที่ 1 - 10 กันยายน 2569
+          </h2>
+
+          <!-- Generated Military Table -->
+          <div class="table-wrapper" id="tableContainer">
+            <!-- Table dynamically injected by JS -->
+          </div>
+        </div>
+
+        <div style="margin-top: 15px; font-size: 0.85rem; color: #64748b; text-align: center;" class="no-print">
+          💡 <i>เคล็ดลับ: สามารถคลิกที่ช่องตัวเลขในตารางเพื่อแก้ไขเลข 0-4 หรือคลิกช่อง ผช.สิบเวร เพื่อเปิด/ปิดแถบสีเขียวได้โดยตรง</i>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Modal 1: Personnel Backend Management (ระบบหลังบ้าน) -->
+  <div class="modal-overlay" id="personnelModal">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-users-gear" style="color: var(--primary-color);"></i>
+          <span>ระบบจัดการฐานข้อมูลกำลังพล (ระบบหลังบ้าน)</span>
+        </div>
+        <button class="close-btn" onclick="closePersonnelModal()">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll">
+        <!-- Stats summary bar -->
+        <div class="personnel-stats-bar">
+          <div class="p-stat-card">
+            <span>กำลังพลทั้งหมด</span>
+            <span class="val" id="dbTotalCount">0</span>
+          </div>
+          <div class="p-stat-card" style="border-left: 4px solid var(--platoon-1-color);">
+            <span>หมวด 1</span>
+            <span class="val" id="dbPlatoon1Count" style="color: var(--platoon-1-color);">0</span>
+          </div>
+          <div class="p-stat-card" style="border-left: 4px solid var(--platoon-2-color);">
+            <span>หมวด 2</span>
+            <span class="val" id="dbPlatoon2Count" style="color: var(--platoon-2-color);">0</span>
+          </div>
+          <div class="p-stat-card" style="border-left: 4px solid var(--platoon-3-color);">
+            <span>หมวด 3</span>
+            <span class="val" id="dbPlatoon3Count" style="color: var(--platoon-3-color);">0</span>
+          </div>
+        </div>
+
+        <!-- Add / Edit Personnel Form -->
+        <div class="personnel-form-card">
+          <div style="font-family:'Prompt',sans-serif; font-weight:600; margin-bottom:10px; color:#1e293b;" id="personnelFormTitle">
+            <i class="fa-solid fa-user-plus"></i> บันทึกข้อมูลกำลังพลใหม่
+          </div>
+          <form id="personnelForm" onsubmit="handleSavePersonnel(event)">
+            <input type="hidden" id="editPersonnelId" value="">
+            <div class="row-inputs-5">
+              <div>
+                <label>ชื่อ - สกุล *</label>
+                <input type="text" id="formName" class="form-control" required placeholder="เช่น พลทหาร กรกช ...">
+              </div>
+              <div>
+                <label>หมวด *</label>
+                <select id="formPlatoon" class="form-control" required>
+                  <option value="หมวด 1">หมวด 1</option>
+                  <option value="หมวด 2">หมวด 2</option>
+                  <option value="หมวด 3">หมวด 3</option>
+                </select>
+              </div>
+              <div>
+                <label>ผลัด *</label>
+                <select id="formBatch" class="form-control" required>
+                  <option value="2/66">2/66</option>
+                  <option value="1/67">1/67</option>
+                  <option value="2/67">2/67</option>
+                  <option value="1/68">1/68</option>
+                  <option value="2/68">2/68</option>
+                  <option value="1/69">1/69</option>
+                </select>
+              </div>
+              <div>
+                <label>หน้าที่ / สายงาน *</label>
+                <select id="formRole" class="form-control" required>
+                  <option value="บก.พัน">บก.พัน</option>
+                  <option value="สื่อสาร">สื่อสาร</option>
+                  <option value="สาย 1">สาย 1</option>
+                  <option value="สวัสดิการ">สวัสดิการ</option>
+                  <option value="คลังน้ำมัน">คลังน้ำมัน</option>
+                  <option value="พัฒนากองร้อย">พัฒนากองร้อย</option>
+                  <option value="ยย.นอก">ยย.นอก</option>
+                </select>
+              </div>
+              <div>
+                <label>ประเภทเวรที่เข้า *</label>
+                <select id="formDutyType" class="form-control" required>
+                  <option value="เวรกองรักษาการ">🛡️ เวรกองรักษาการ</option>
+                  <option value="ผช.สิบเวร">🎖️ ผช.สิบเวร</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnCancelEdit" style="display:none;" onclick="cancelEditPersonnel()">
+                ยกเลิกแก้ไข
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="filter-bar" style="grid-template-columns: 1.2fr 1fr 1fr 1fr 1.2fr auto;">
+          <div>
+            <input type="text" id="searchPersonnelText" class="form-control" placeholder="🔍 ค้นหาชื่อ-สกุล..." oninput="renderPersonnelTable()">
+          </div>
+          <div>
+            <select id="filterPlatoon" class="form-control" onchange="renderPersonnelTable()">
+              <option value="">-- ทุกหมวด --</option>
+              <option value="หมวด 1">หมวด 1</option>
+              <option value="หมวด 2">หมวด 2</option>
+              <option value="หมวด 3">หมวด 3</option>
+            </select>
+          </div>
+          <div>
+            <select id="filterBatch" class="form-control" onchange="renderPersonnelTable()">
+              <option value="">-- ทุกผลัด --</option>
+              <option value="2/66">ผลัด 2/66</option>
+              <option value="1/67">ผลัด 1/67</option>
+              <option value="2/67">ผลัด 2/67</option>
+              <option value="1/68">ผลัด 1/68</option>
+              <option value="2/68">ผลัด 2/68</option>
+              <option value="1/69">ผลัด 1/69</option>
+            </select>
+          </div>
+          <div>
+            <select id="filterRole" class="form-control" onchange="renderPersonnelTable()">
+              <option value="">-- ทุกหน้าที่ --</option>
+              <option value="บก.พัน">บก.พัน</option>
+              <option value="สื่อสาร">สื่อสาร</option>
+              <option value="สาย 1">สาย 1</option>
+              <option value="สวัสดิการ">สวัสดิการ</option>
+              <option value="คลังน้ำมัน">คลังน้ำมัน</option>
+              <option value="พัฒนากองร้อย">พัฒนากองร้อย</option>
+              <option value="ยย.นอก">ยย.นอก</option>
+            </select>
+          </div>
+          <div>
+            <select id="filterDutyType" class="form-control" onchange="renderPersonnelTable()">
+              <option value="">-- ทุกประเภทเวร --</option>
+              <option value="เวรกองรักษาการ">🛡️ กองรักษาการ</option>
+              <option value="ผช.สิบเวร">🎖️ ผช.สิบเวร</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn btn-secondary btn-sm" onclick="resetPersonnelFilters()" title="ล้างตัวกรอง">
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">ลำดับ</th>
+              <th>ชื่อ - สกุล</th>
+              <th style="width: 100px;">หมวด</th>
+              <th style="width: 80px;">ผลัด</th>
+              <th style="width: 130px;">หน้าที่ / สายงาน</th>
+              <th style="width: 130px;">ประเภทเวรที่เข้า</th>
+              <th style="width: 80px; text-align: center;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="personnelTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:12px; border-top:1px solid #e2e8f0; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="exportPersonnelExcel()">
+            <i class="fa-solid fa-file-excel"></i> ส่งออก Excel กำลังพล
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="resetPersonnelToDefault()">
+            <i class="fa-solid fa-arrows-rotate"></i> โหลดข้อมูลเริ่มต้น
+          </button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="closePersonnelModal()">
+          เสร็จสิ้น / ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Cell Value Picker Modal -->
+  <div class="modal-overlay" id="cellModal">
+    <div class="modal-box">
+      <div class="modal-header" id="modalTitle">เลือกเลขเวร</div>
+      <div style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">เลือกเลขเวร 0 - 4 หรือล้างค่า:</div>
+      <div class="modal-options">
+        <button class="picker-btn" onclick="setCellValue(0)">0</button>
+        <button class="picker-btn" onclick="setCellValue(1)">1</button>
+        <button class="picker-btn" onclick="setCellValue(2)">2</button>
+        <button class="picker-btn" onclick="setCellValue(3)">3</button>
+        <button class="picker-btn" onclick="setCellValue(4)">4</button>
+        <button class="picker-btn clear-btn" onclick="setCellValue(null)">
+          <i class="fa-solid fa-eraser"></i> ล้างค่าช่องนี้ (ว่าง)
+        </button>
+      </div>
+      <button class="btn btn-secondary btn-block" onclick="closeCellModal()">ยกเลิก</button>
+    </div>
+  </div>
+
+  <!-- SheetJS CDN for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Main Script -->
+  <script src="app.js"></script>
+</body>
+</html>

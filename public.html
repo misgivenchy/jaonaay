@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตรวจสอบตารางเวร — ค้นหาชื่อ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --success: #047857;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --sat-bg: #fef3c7;
+      --sun-bg: #fef2f2;
+      --asst-green: #dcfce7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Hero Header */
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: #fff;
+      padding: 32px 20px 28px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -20px; left: 0; right: 0;
+      height: 40px;
+      background: var(--bg);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+    .hero h1 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .hero p {
+      font-size: 0.92rem;
+      opacity: 0.85;
+    }
+
+    /* Main Container */
+    .main {
+      max-width: 720px;
+      margin: -10px auto 40px;
+      padding: 0 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Schedule Info Card */
+    .info-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .info-card .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .info-card .title-row i {
+      font-size: 1.3rem;
+      color: var(--primary);
+    }
+    .info-card .title-row h2 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .info-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: #eff6ff;
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+    }
+    .info-badge.date {
+      background: #fef9c3;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    /* Search Section */
+    .search-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .search-card label {
+      display: block;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .search-wrapper {
+      position: relative;
+    }
+    .search-wrapper i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 1rem;
+    }
+    .search-input {
+      width: 100%;
+      padding: 14px 16px 14px 42px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 1.05rem;
+      color: var(--text);
+      background: #f8fafc;
+      transition: all 0.2s;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: var(--primary-light);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+    }
+    .search-input::placeholder {
+      color: #94a3b8;
+    }
+
+    /* Results */
+    .results-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .results-header {
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .results-header .count-badge {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.82rem;
+    }
+
+    /* Person Card */
+    .person-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .person-card:last-child {
+      margin-bottom: 0;
+    }
+    .person-name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .person-name {
+      font-family: 'Prompt', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .person-duty-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .badge-guard {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+    .badge-asst {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .badge-sat {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    /* Duty Day List */
+    .duty-days-list {
+      list-style: none;
+    }
+    .duty-day-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      transition: background 0.15s;
+    }
+    .duty-day-item:hover {
+      background: #eff6ff;
+    }
+    .duty-day-item:last-child {
+      margin-bottom: 0;
+    }
+    .day-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+    .day-icon.normal { background: #dbeafe; color: #1e40af; }
+    .day-icon.sat { background: #fef3c7; color: #92400e; }
+    .day-icon.sun { background: #fef2f2; color: #dc2626; }
+    .day-icon.asst { background: #dcfce7; color: #166534; }
+    .day-text {
+      flex: 1;
+    }
+    .day-text .full-date {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .day-text .duty-type-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .day-number-badge {
+      background: var(--primary);
+      color: #fff;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .day-number-badge.asst-badge {
+      background: #047857;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+    .empty-state p {
+      font-size: 1rem;
+    }
+    .empty-state .hint {
+      font-size: 0.85rem;
+      margin-top: 6px;
+      opacity: 0.7;
+    }
+
+    /* No schedule published state */
+    .no-schedule {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .no-schedule i {
+      font-size: 4rem;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+    .no-schedule h3 {
+      font-family: 'Prompt', sans-serif;
+      font-size: 1.2rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .no-schedule p {
+      color: #94a3b8;
+      font-size: 0.92rem;
+    }
+
+    /* Full Table View */
+    .full-table-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .full-table-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      background: transparent;
+      color: var(--primary);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+    .full-table-toggle:hover {
+      background: #eff6ff;
+      border-color: var(--primary-light);
+    }
+
+    /* Military Table (read-only version) */
+    .mil-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    .mil-table th, .mil-table td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .mil-table thead th {
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+    .mil-table .th-name { background: #b6d7a8; font-weight: 700; text-align: left; padding-left: 8px; }
+    .mil-table .th-day { background: #c9daf8; }
+    .mil-table .th-date { background: #ffe599; }
+    .mil-table .td-name { text-align: left; padding-left: 8px; font-weight: 600; white-space: nowrap; }
+    .mil-table .sat-cell { background: #fce5cd; }
+    .mil-table .sun-cell { background: #f4cccc; }
+    .mil-table .asst-header { background: #cc0000; color: #fff; font-weight: 700; }
+    .mil-table .asst-on { background: #38761d; }
+    .mil-table .spacer-row td { border: none; height: 6px; background: transparent; }
+    .mil-table .highlight-name { background: #fef08a !important; }
+    .mil-table .highlight-cell { background: #bbf7d0 !important; font-weight: 800; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: #94a3b8;
+      font-size: 0.82rem;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 600px) {
+      .hero { padding: 24px 16px 22px; }
+      .hero h1 { font-size: 1.2rem; }
+      .main { padding: 0 12px; }
+      .info-card, .search-card, .results-card, .full-table-card { padding: 16px; border-radius: 12px; }
+      .person-card { padding: 14px 16px; }
+      .duty-day-item { padding: 8px 10px; gap: 10px; }
+      .info-badges { gap: 6px; }
+      .info-badge { font-size: 0.78rem; padding: 4px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero Header -->
+  <div class="hero">
+    <h1><i class="fa-solid fa-shield-halved"></i> ตรวจสอบตารางเวร</h1>
+    <p>ค้นหาชื่อของคุณเพื่อดูวันที่มีเวรทั้งหมด</p>
+  </div>
+
+  <div class="main">
+
+    <!-- Schedule Info -->
+    <div class="info-card" id="scheduleInfo" style="display:none;">
+      <div class="title-row">
+        <i class="fa-solid fa-calendar-days"></i>
+        <h2 id="scheduleTitle">ตารางเวร</h2>
+      </div>
+      <div class="info-badges" id="scheduleBadges"></div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-card">
+      <label for="searchInput">
+        <i class="fa-solid fa-magnifying-glass"></i> ค้นหาชื่อ-สกุล
+      </label>
+      <div class="search-wrapper">
+        <i class="fa-solid fa-user"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="พิมพ์ชื่อหรือนามสกุล เช่น กรกช" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsContainer"></div>
+
+    <!-- Full Table Toggle -->
+    <div class="full-table-card" id="fullTableSection" style="display:none;">
+      <button class="full-table-toggle" id="toggleTableBtn" onclick="toggleFullTable()">
+        <i class="fa-solid fa-table"></i> ดูตารางเวรเต็มรูปแบบ
+      </button>
+      <div id="fullTableContent" style="display:none;"></div>
+    </div>
+
+    <!-- No Schedule State -->
+    <div class="no-schedule" id="noScheduleState">
+      <i class="fa-solid fa-calendar-xmark"></i>
+      <h3>ยังไม่มีตารางเวร</h3>
+      <p>ผู้ดูแลยังไม่ได้สร้างตารางเวรในระบบ</p>
+    </div>
+
+    <div class="footer">
+      ระบบจัดตารางเวรกองรักษาการ — ข้อมูลอัปเดตอัตโนมัติเมื่อผู้ดูแลแก้ไขตาราง
+    </div>
+  </div>
+
+  <script>
+    // Constants
+    const STORAGE_KEY_PUBLISHED = "military_roster_published";
+    const MONTH_NAMES_TH = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const DAY_NAMES_FULL_TH = ["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"];
+    const DAY_NAMES_SHORT = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+
+    let publishedData = null;
+    let isTableVisible = false;
+
+    // Load data
+    function loadPublished() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_PUBLISHED);
+        if (raw) {
+          publishedData = JSON.parse(raw);
+          return true;
+        }
+      } catch (e) {
+        console.warn("Could not load published schedule", e);
+      }
+      return false;
+    }
+
+    // Escape HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    // Initialize
+    function init() {
+      if (!loadPublished()) {
+        document.getElementById("noScheduleState").style.display = "block";
+        document.getElementById("scheduleInfo").style.display = "none";
+        document.getElementById("fullTableSection").style.display = "none";
+        return;
+      }
+
+      document.getElementById("noScheduleState").style.display = "none";
+      document.getElementById("scheduleInfo").style.display = "block";
+      document.getElementById("fullTableSection").style.display = "block";
+
+      // Populate info
+      const d = publishedData;
+      document.getElementById("scheduleTitle").textContent = d.title || "ตารางเวร";
+      document.getElementById("scheduleBadges").innerHTML = `
+        <span class="info-badge date">
+          <i class="fa-solid fa-calendar-day"></i>
+          ${d.startDay} - ${d.endDay} ${d.monthName} ${d.yearBE}
+        </span>
+        <span class="info-badge">
+          <i class="fa-solid fa-users"></i>
+          กำลังพล ${(d.mainGuards || []).length + (d.saturdayGuards || []).length + (d.assistantGuards || []).length} นาย
+        </span>
+      `;
+
+      // Setup search
+      document.getElementById("searchInput").addEventListener("input", handleSearch);
+
+      // Show initial empty state in results
+      showEmptySearch();
+    }
+
+    function showEmptySearch() {
+      document.getElementById("resultsContainer").innerHTML = `
+        <div class="results-card">
+          <div class="empty-state">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <p>พิมพ์ชื่อเพื่อค้นหาวันที่มีเวร</p>
+            <p class="hint">ค้นหาได้ทั้งชื่อและนามสกุล</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleSearch() {
+      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+      if (!query || !publishedData) {
+        showEmptySearch();
+        return;
+      }
+
+      const results = [];
+
+      // Search in mainGuards
+      (publishedData.mainGuards || []).forEach(name => {
+        if (name.toLowerCase().includes(query)) {
+          results.push({ name, type: "guard-main", schedule: publishedData.schedule[name] || [] });
+        }
+      });
+
+      // Search in saturdayGuards
+      (publishedData.saturdayGuards || []).forEach(name => {
+        if (name.toLowerCase().includes(query)) {
+          results.push({ name, type: "guard-sat", schedule: publishedData.schedule[name] || [] });
+        }
+      });
+
+      // Search in assistantGuards
+      (publishedData.assistantGuards || []).forEach(name => {
+        if (name.toLowerCase().includes(query)) {
+          // Check if already found as guard
+          const existing = results.find(r => r.name === name);
+          if (existing) {
+            existing.assistantSchedule = publishedData.assistantSchedule[name] || [];
+          } else {
+            results.push({ name, type: "assistant", assistantSchedule: publishedData.assistantSchedule[name] || [] });
+          }
+        }
+      });
+
+      renderResults(results, query);
+    }
+
+    function renderResults(results, query) {
+      const container = document.getElementById("resultsContainer");
+
+      if (results.length === 0) {
+        container.innerHTML = `
+          <div class="results-card">
+            <div class="empty-state">
+              <i class="fa-solid fa-face-meh"></i>
+              <p>ไม่พบชื่อ "${escapeHtml(query)}" ในตารางเวร</p>
+              <p class="hint">ลองตรวจสอบการสะกดหรือค้นหาด้วยชื่ออื่น</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `
+        <div class="results-card">
+          <div class="results-header">
+            <i class="fa-solid fa-list-check"></i>
+            ผลการค้นหา
+            <span class="count-badge">${results.length} คน</span>
+          </div>
+      `;
+
+      results.forEach(person => {
+        html += renderPersonCard(person);
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function renderPersonCard(person) {
+      const days = publishedData.days || [];
+      let dutyDays = [];
+
+      // Type badge
+      let typeBadge = '';
+      if (person.type === 'guard-main') {
+        typeBadge = '<span class="person-duty-badge badge-guard"><i class="fa-solid fa-shield-halved"></i> เวรกองรักษาการ</span>';
+      } else if (person.type === 'guard-sat') {
+        typeBadge = '<span class="person-duty-badge badge-sat"><i class="fa-solid fa-calendar-day"></i> เวรวันเสาร์</span>';
+      } else if (person.type === 'assistant') {
+        typeBadge = '<span class="person-duty-badge badge-asst"><i class="fa-solid fa-medal"></i> ผช.สิบเวร</span>';
+      }
+
+      // Collect duty days for guard schedule
+      if (person.schedule) {
+        person.schedule.forEach((val, idx) => {
+          if (val !== null && val !== '' && val !== undefined) {
+            const dayInfo = days[idx];
+            if (dayInfo) {
+              dutyDays.push({
+                dayInfo,
+                value: val,
+                type: 'guard'
+              });
+            }
+          }
+        });
+      }
+
+      // Collect duty days for assistant schedule
+      if (person.assistantSchedule) {
+        person.assistantSchedule.forEach((isOn, idx) => {
+          if (isOn) {
+            const dayInfo = days[idx];
+            if (dayInfo) {
+              dutyDays.push({
+                dayInfo,
+                value: null,
+                type: 'assistant'
+              });
+            }
+          }
+        });
+      }
+
+      // Sort by date number
+      dutyDays.sort((a, b) => a.dayInfo.dateNumber - b.dayInfo.dateNumber);
+
+      let html = `
+        <div class="person-card">
+          <div class="person-name-row">
+            <span class="person-name"><i class="fa-solid fa-user" style="color:var(--muted); font-size:0.9rem;"></i> ${escapeHtml(person.name)}</span>
+            ${typeBadge}
+          </div>
+      `;
+
+      if (dutyDays.length === 0) {
+        html += `<p style="color:var(--muted); font-size:0.9rem; text-align:center; padding:10px 0;">ไม่มีเวรในช่วงเวลานี้</p>`;
+      } else {
+        html += `<ul class="duty-days-list">`;
+        dutyDays.forEach(dd => {
+          const di = dd.dayInfo;
+          const fullDayName = DAY_NAMES_FULL_TH[di.dayOfWeekIndex];
+          const monthName = publishedData.monthName;
+          const yearBE = publishedData.yearBE;
+          const dateStr = `${fullDayName}ที่ ${di.dateNumber} ${monthName} ${yearBE}`;
+
+          let iconClass = 'normal';
+          let dutyLabel = '';
+
+          if (dd.type === 'assistant') {
+            iconClass = 'asst';
+            dutyLabel = 'ผช.สิบเวร';
+          } else {
+            if (di.isSaturday) iconClass = 'sat';
+            else if (di.isSunday) iconClass = 'sun';
+            dutyLabel = 'เวรกองรักษาการ';
+          }
+
+          html += `
+            <li class="duty-day-item">
+              <div class="day-icon ${iconClass}">${DAY_NAMES_SHORT[di.dayOfWeekIndex]}</div>
+              <div class="day-text">
+                <div class="full-date">${dateStr}</div>
+                <div class="duty-type-label">${dutyLabel}</div>
+              </div>
+              ${dd.type === 'guard' ? `<div class="day-number-badge">${dd.value}</div>` : `<div class="day-number-badge asst-badge"><i class="fa-solid fa-check" style="font-size:0.75rem;"></i></div>`}
+            </li>
+          `;
+        });
+        html += `</ul>`;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    // Full table view
+    function toggleFullTable() {
+      isTableVisible = !isTableVisible;
+      const content = document.getElementById("fullTableContent");
+      const btn = document.getElementById("toggleTableBtn");
+
+      if (isTableVisible) {
+        content.style.display = "block";
+        btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> ซ่อนตารางเต็มรูปแบบ';
+        renderFullTable();
+      } else {
+        content.style.display = "none";
+        btn.innerHTML = '<i class="fa-solid fa-table"></i> ดูตารางเวรเต็มรูปแบบ';
+      }
+    }
+
+    function renderFullTable() {
+      if (!publishedData) return;
+      const days = publishedData.days || [];
+      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+
+      let html = `<table class="mil-table">`;
+
+      // Header row 1: day names
+      html += `<thead><tr>`;
+      html += `<th class="th-name" rowspan="2">ชื่อ - สกุล</th>`;
+      days.forEach(d => {
+        let cls = 'th-day';
+        let style = '';
+        if (d.isSaturday) style = 'background:#fce5cd;';
+        if (d.isSunday) style = 'background:#f4cccc;';
+        html += `<th class="${cls}" style="${style}">${DAY_NAMES_SHORT[d.dayOfWeekIndex]}</th>`;
+      });
+      html += `</tr>`;
+
+      // Header row 2: date numbers
+      html += `<tr>`;
+      days.forEach(d => {
+        html += `<th class="th-date">${d.dateNumber}</th>`;
+      });
+      html += `</tr></thead>`;
+
+      html += `<tbody>`;
+
+      // Main Guards
+      (publishedData.mainGuards || []).forEach(name => {
+        const isHighlighted = query && name.toLowerCase().includes(query);
+        html += `<tr>`;
+        html += `<td class="td-name ${isHighlighted ? 'highlight-name' : ''}">${escapeHtml(name)}</td>`;
+        days.forEach((d, idx) => {
+          const sched = publishedData.schedule[name];
+          const val = (sched && sched[idx] !== null && sched[idx] !== undefined) ? sched[idx] : '';
+          let cls = '';
+          if (d.isSaturday) cls = 'sat-cell';
+          if (d.isSunday) cls = 'sun-cell';
+          if (isHighlighted && val !== '') cls += ' highlight-cell';
+          html += `<td class="${cls}">${val !== '' ? val : ''}</td>`;
+        });
+        html += `</tr>`;
+      });
+
+      // Spacer
+      html += `<tr class="spacer-row"><td colspan="${days.length + 1}"></td></tr>`;
+
+      // Saturday Guards
+      (publishedData.saturdayGuards || []).forEach(name => {
+        const isHighlighted = query && name.toLowerCase().includes(query);
+        html += `<tr>`;
+        html += `<td class="td-name ${isHighlighted ? 'highlight-name' : ''}">${escapeHtml(name)}</td>`;
+        days.forEach((d, idx) => {
+          const sched = publishedData.schedule[name];
+          const val = (sched && sched[idx] !== null && sched[idx] !== undefined) ? sched[idx] : '';
+          let cls = '';
+          if (d.isSaturday) cls = 'sat-cell';
+          if (d.isSunday) cls = 'sun-cell';
+          if (isHighlighted && val !== '') cls += ' highlight-cell';
+          html += `<td class="${cls}">${val !== '' ? val : ''}</td>`;
+        });
+        html += `</tr>`;
+      });
+
+      // Spacer
+      html += `<tr class="spacer-row"><td colspan="${days.length + 1}"></td></tr>`;
+
+      // Assistant Header
+      html += `<tr><td class="asst-header">ผช.สิบเวรฯ</td>`;
+      days.forEach(() => { html += `<td class="asst-header"></td>`; });
+      html += `</tr>`;
+
+      // Assistant Guards
+      (publishedData.assistantGuards || []).forEach(name => {
+        const isHighlighted = query && name.toLowerCase().includes(query);
+        html += `<tr>`;
+        html += `<td class="td-name ${isHighlighted ? 'highlight-name' : ''}">${escapeHtml(name)}</td>`;
+        days.forEach((d, idx) => {
+          const sched = publishedData.assistantSchedule[name];
+          const isOn = sched && sched[idx];
+          let cls = isOn ? 'asst-on' : '';
+          if (isHighlighted && isOn) cls += ' highlight-cell';
+          html += `<td class="${cls}"></td>`;
+        });
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      document.getElementById("fullTableContent").innerHTML = html;
+    }
+
+    // Re-render full table on search to update highlights
+    document.addEventListener("DOMContentLoaded", () => {
+      init();
+      document.getElementById("searchInput").addEventListener("input", () => {
+        if (isTableVisible) renderFullTable();
+      });
+    });
+  </script>
+
+</body>
+</html>

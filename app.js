@@ -529,6 +529,36 @@ function randomizeSchedule() {
     appState.schedule = bestCandidate.schedule;
     appState.assistantSchedule = bestCandidate.assistantSchedule;
   }
+  savePublishedSchedule();
+}
+
+// Save Published Schedule to localStorage (for public page)
+const STORAGE_KEY_PUBLISHED = "military_roster_published";
+
+function savePublishedSchedule() {
+  const days = getDaysList();
+  const monthName = MONTH_NAMES_TH[appState.monthIndex];
+  const published = {
+    title: appState.title,
+    startDay: appState.startDay,
+    endDay: appState.endDay,
+    monthIndex: appState.monthIndex,
+    monthName: monthName,
+    yearBE: appState.yearBE,
+    yearCE: appState.yearBE - 543,
+    days: days,
+    mainGuards: appState.mainGuards,
+    saturdayGuards: appState.saturdayGuards,
+    assistantGuards: appState.assistantGuards,
+    schedule: appState.schedule,
+    assistantSchedule: appState.assistantSchedule,
+    publishedAt: new Date().toISOString()
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY_PUBLISHED, JSON.stringify(published));
+  } catch (e) {
+    console.error("Failed to save published schedule", e);
+  }
 }
 
 // Shuffle Helper
@@ -882,6 +912,7 @@ function setCellValue(val) {
   }
   closeCellModal();
   renderAll();
+  savePublishedSchedule();
 }
 
 function toggleAssistantCell(name, dayIdx) {
@@ -889,6 +920,7 @@ function toggleAssistantCell(name, dayIdx) {
     const current = !!appState.assistantSchedule[name][dayIdx];
     appState.assistantSchedule[name][dayIdx] = !current;
     renderAll();
+    savePublishedSchedule();
   }
 }
 

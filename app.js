@@ -237,6 +237,8 @@ function renderReviewPersonnelTable() {
 
     const roleSelectClass = isDev ? "role-dev" : "role-non-dev";
     const dutySelectClass = isGuard ? "duty-guard" : "duty-asst";
+    const regionSelectClass = (p.region === "นครสวรรค์") ? "region-nakhon" : (p.region === "อีสาน" ? "region-isan" : "");
+    const statusSelectClass = (p.status === "ดองเวร") ? "status-dong" : "";
 
     return `
       <tr>
@@ -253,6 +255,19 @@ function renderReviewPersonnelTable() {
           <select class="inline-select ${dutySelectClass}" onchange="updatePersonDutyType('${p.id}', this.value)" title="คลิกเพื่อเปลี่ยนประเภทเวร">
             <option value="เวรกองรักษาการ" ${isGuard ? 'selected' : ''}>🛡️ กองรักษาการ</option>
             <option value="ผช.สิบเวร" ${!isGuard ? 'selected' : ''}>🎖️ ผช.สิบเวร</option>
+          </select>
+        </td>
+        <td>
+          <select class="inline-select ${regionSelectClass}" onchange="updatePersonRegion('${p.id}', this.value)" title="เลือกพื้นที่: นครสวรรค์ หรือ อีสาน จะไม่เข้าเวรวันเดียวกัน">
+            <option value="" ${!p.region ? 'selected' : ''}>- ไม่ระบุ -</option>
+            <option value="นครสวรรค์" ${p.region === 'นครสวรรค์' ? 'selected' : ''}>🏛️ นครสวรรค์</option>
+            <option value="อีสาน" ${p.region === 'อีสาน' ? 'selected' : ''}>🌾 อีสาน</option>
+          </select>
+        </td>
+        <td>
+          <select class="inline-select ${statusSelectClass}" onchange="updatePersonStatus('${p.id}', this.value)" title="สถานะเวร: ดองเวรจะจัดวันเว้นวันและเน้นเลข 2">
+            <option value="ปกติ" ${(p.status || 'ปกติ') === 'ปกติ' ? 'selected' : ''}>🟢 ปกติ</option>
+            <option value="ดองเวร" ${p.status === 'ดองเวร' ? 'selected' : ''}>🔴 ดองเวร</option>
           </select>
         </td>
         <td>${posBadgeHtml}</td>
@@ -281,10 +296,42 @@ function updatePersonDutyType(id, newDutyType) {
   }
 }
 
+// In-place Update Person Region
+function updatePersonRegion(id, newRegion) {
+  const person = personnelDatabase.find(p => p.id === id);
+  if (person) {
+    person.region = newRegion || "";
+    savePersonnelDatabase();
+    renderReviewPersonnelTable();
+  }
+}
+
+// In-place Update Person Status
+function updatePersonStatus(id, newStatus) {
+  const person = personnelDatabase.find(p => p.id === id);
+  if (person) {
+    person.status = newStatus || "ปกติ";
+    savePersonnelDatabase();
+    renderReviewPersonnelTable();
+  }
+}
+
 // Helper: Check if soldier is in 'พัฒนากองร้อย'
 function isCompanyDev(name) {
   const found = personnelDatabase.find(p => p.name === name);
   return found ? (found.role === "พัฒนากองร้อย") : true;
+}
+
+// Helper: Get soldier region ('นครสวรรค์' | 'อีสาน' | '')
+function getPersonRegion(name) {
+  const found = personnelDatabase.find(p => p.name === name);
+  return (found && found.region) ? found.region : "";
+}
+
+// Helper: Check if soldier is dong-waen (ดองเวร)
+function isPersonDong(name) {
+  const found = personnelDatabase.find(p => p.name === name);
+  return (found && found.status === "ดองเวร");
 }
 
 // Get Days List
@@ -364,10 +411,12 @@ function generateSingleSchedule() {
 
   let totalRepeatPenalty = 0;
   let totalGapViolations = 0;
+  let totalRegionViolations = 0;
 
   // 1. Guard Schedule Generation
   for (let dayIdx = 0; dayIdx < totalDays; dayIdx++) {
     const dayInfo = days[dayIdx];
+    const todayAssigned = []; // List of all soldiers assigned today
 
     if (dayInfo.isSaturday && satGuards.length > 0) {
       // Saturday:
@@ -389,6 +438,12 @@ function generateSingleSchedule() {
           const hist = satNumberHistory[satPerson] || [];
           const count = hist.filter(x => x === num).length;
           pen += count * 100;
+
+          // If person is 'ดองเวร', strongly prefer number 2!
+          if (isPersonDong(satPerson)) {
+            if (num === 2) pen -= 500;
+            else pen += 300;
+          }
         }
         if (pen < bestSatPenalty) {
           bestSatPenalty = pen;
@@ -401,10 +456,30 @@ function generateSingleSchedule() {
         const num = bestSatPerm[i];
         schedule[satPerson][dayIdx] = num;
         satNumberHistory[satPerson].push(num);
+        todayAssigned.push(satPerson);
       }
 
       // Slot 0 strictly assigned to 1 Main guard (พัฒนากองร้อย)
-      let eligible = allMain.filter(n => (dayIdx - lastWorkedDay[n]) >= 3);
+      // Check region conflict with Saturday guards already assigned today
+      const satRegionsToday = todayAssigned.map(n => getPersonRegion(n)).filter(Boolean);
+      const hasNakhonToday = satRegionsToday.includes("นครสวรรค์");
+      const hasIsanToday = satRegionsToday.includes("อีสาน");
+
+      let eligible = allMain.filter(n => {
+        const minGap = isPersonDong(n) ? 2 : 3;
+        return (dayIdx - lastWorkedDay[n]) >= minGap;
+      });
+
+      // Filter out region conflicts if possible
+      let regionSafe = eligible.filter(n => {
+        const reg = getPersonRegion(n);
+        if (hasNakhonToday && reg === "อีสาน") return false;
+        if (hasIsanToday && reg === "นครสวรรค์") return false;
+        return true;
+      });
+      if (regionSafe.length > 0) eligible = regionSafe;
+      else if (eligible.length > 0) totalRegionViolations++;
+
       if (eligible.length === 0) {
         totalGapViolations++;
         eligible = allMain.filter(n => (dayIdx - lastWorkedDay[n]) >= 2);
@@ -413,6 +488,11 @@ function generateSingleSchedule() {
       }
 
       eligible.sort((a, b) => {
+        // Dong-waen gets high priority to work more often
+        const isDongA = isPersonDong(a) ? 1 : 0;
+        const isDongB = isPersonDong(b) ? 1 : 0;
+        if (isDongA !== isDongB) return isDongB - isDongA;
+
         if (dutyCounts[a] !== dutyCounts[b]) return dutyCounts[a] - dutyCounts[b];
         const aCount0 = numberHistory[a].filter(x => x === 0).length;
         const bCount0 = numberHistory[b].filter(x => x === 0).length;
@@ -430,18 +510,42 @@ function generateSingleSchedule() {
         lastWorkedDay[chosen0] = dayIdx;
         lastNumberAssigned[chosen0] = 0;
         numberHistory[chosen0].push(0);
+        todayAssigned.push(chosen0);
       }
 
     } else {
-      // Normal Day (Sun - Fri): Pick 5 candidates from Main group with strict gap >= 3
+      // Normal Day (Sun - Fri): Pick 5 candidates from Main group
+      // Rules:
+      // - Dong-waen (ดองเวร): min gap >= 2 (วันเว้นวันได้) and prioritized!
+      // - Normal: min gap >= 3
+      // - Region conflict: 'นครสวรรค์' and 'อีสาน' must NOT be on duty together today
       const selected = [];
       const requiredSlots = Math.min(5, allMain.length);
 
       for (let s = 0; s < requiredSlots; s++) {
         const pool = allMain.filter(n => !selected.includes(n));
         
-        let validPool = pool.filter(n => (dayIdx - lastWorkedDay[n]) >= 3);
-        if (validPool.length === 0) {
+        // Check current regions in selected today
+        const curRegions = selected.map(n => getPersonRegion(n)).filter(Boolean);
+        const hasNakhon = curRegions.includes("นครสวรรค์");
+        const hasIsan = curRegions.includes("อีสาน");
+
+        let validPool = pool.filter(n => {
+          const minGap = isPersonDong(n) ? 2 : 3;
+          return (dayIdx - lastWorkedDay[n]) >= minGap;
+        });
+
+        // Filter region conflicts
+        let regionCleanPool = validPool.filter(n => {
+          const reg = getPersonRegion(n);
+          if (hasNakhon && reg === "อีสาน") return false;
+          if (hasIsan && reg === "นครสวรรค์") return false;
+          return true;
+        });
+
+        if (regionCleanPool.length > 0) {
+          validPool = regionCleanPool;
+        } else if (validPool.length === 0) {
           totalGapViolations++;
           validPool = pool.filter(n => (dayIdx - lastWorkedDay[n]) >= 2);
           if (validPool.length === 0) {
@@ -451,6 +555,11 @@ function generateSingleSchedule() {
         }
 
         validPool.sort((a, b) => {
+          // Prioritize dong-waen candidates
+          const isDongA = isPersonDong(a) ? 1 : 0;
+          const isDongB = isPersonDong(b) ? 1 : 0;
+          if (isDongA !== isDongB) return isDongB - isDongA;
+
           if (dutyCounts[a] !== dutyCounts[b]) return dutyCounts[a] - dutyCounts[b];
           const gapA = dayIdx - lastWorkedDay[a];
           const gapB = dayIdx - lastWorkedDay[b];
@@ -461,10 +570,15 @@ function generateSingleSchedule() {
         if (validPool.length > 0) {
           const pick = validPool[0];
           selected.push(pick);
+          const pickReg = getPersonRegion(pick);
+          if ((hasNakhon && pickReg === "อีสาน") || (hasIsan && pickReg === "นครสวรรค์")) {
+            totalRegionViolations++;
+          }
         }
       }
 
       // Assign numbers [0, 1, 2, 3, 4] with permutation optimization
+      // If someone is 'ดองเวร', strongly prioritize assigning number 2!
       const availableNumbers = [0, 1, 2, 3, 4].slice(0, selected.length);
       const perms = getPermutations(availableNumbers);
       shuffleArray(perms);
@@ -477,23 +591,32 @@ function generateSingleSchedule() {
         for (let i = 0; i < selected.length; i++) {
           const person = selected[i];
           const num = perm[i];
+          const isDong = isPersonDong(person);
           const hist = numberHistory[person] || [];
           const timesUsed = hist.filter(x => x === num).length;
-          penalty += timesUsed * 2500;
 
-          if (lastNumberAssigned[person] === num) {
-            penalty += 15000;
+          if (isDong) {
+            // For dong-waen: heavily reward assigning number 2, penalize other numbers
+            if (num === 2) {
+              penalty -= 30000;
+            } else {
+              penalty += 15000;
+            }
+          } else {
+            penalty += timesUsed * 2500;
+            if (lastNumberAssigned[person] === num) {
+              penalty += 15000;
+            }
           }
         }
 
         if (penalty < minPermPenalty) {
           minPermPenalty = penalty;
           bestPerm = perm;
-          if (penalty === 0) break;
         }
       }
 
-      totalRepeatPenalty += minPermPenalty;
+      totalRepeatPenalty += Math.max(0, minPermPenalty);
 
       for (let i = 0; i < selected.length; i++) {
         const person = selected[i];
@@ -517,6 +640,14 @@ function generateSingleSchedule() {
     asstGuards.forEach(n => { asstDutyCounts[n] = 0; });
 
     days.forEach((dayInfo, dayIdx) => {
+      // Find regions of soldiers on guard duty today
+      const guardsToday = [];
+      allMain.forEach(n => { if (schedule[n] && schedule[n][dayIdx] !== null) guardsToday.push(n); });
+      satGuards.forEach(n => { if (schedule[n] && schedule[n][dayIdx] !== null) guardsToday.push(n); });
+      const guardRegions = guardsToday.map(n => getPersonRegion(n)).filter(Boolean);
+      const guardHasNakhon = guardRegions.includes("นครสวรรค์");
+      const guardHasIsan = guardRegions.includes("อีสาน");
+
       let targetPool = [];
       if (dayInfo.isWeekend) {
         targetPool = (asstWeekendGuards.length > 0) ? asstWeekendGuards : asstGuards;
@@ -527,10 +658,23 @@ function generateSingleSchedule() {
       let pool = targetPool.filter(n => n !== lastAsst);
       if (pool.length === 0) pool = [...targetPool];
 
+      // Avoid region conflict with guards on duty today
+      let safePool = pool.filter(n => {
+        const r = getPersonRegion(n);
+        if (guardHasNakhon && r === "อีสาน") return false;
+        if (guardHasIsan && r === "นครสวรรค์") return false;
+        return true;
+      });
+      if (safePool.length > 0) pool = safePool;
+      else totalRegionViolations++;
+
       const minCount = Math.min(...pool.map(n => asstDutyCounts[n]));
       const minPool = pool.filter(n => asstDutyCounts[n] === minCount);
 
-      const chosen = minPool[Math.floor(Math.random() * minPool.length)];
+      // If any in minPool is dong-waen, prioritize them
+      minPool.sort((a, b) => (isPersonDong(b) ? 1 : 0) - (isPersonDong(a) ? 1 : 0));
+
+      const chosen = minPool[0];
       if (chosen) {
         assistantSchedule[chosen][dayIdx] = true;
         asstDutyCounts[chosen]++;
@@ -543,7 +687,7 @@ function generateSingleSchedule() {
   const minDuty = Math.min(...Object.values(dutyCounts), 0);
   const dutySpread = maxDuty - minDuty;
 
-  const totalScore = (totalGapViolations * 100000) + (dutySpread * 5000) + totalRepeatPenalty;
+  const totalScore = (totalRegionViolations * 500000) + (totalGapViolations * 100000) + (dutySpread * 5000) + totalRepeatPenalty;
 
   return {
     schedule,
@@ -798,6 +942,23 @@ function getDutyTypeBadgeHtml(dutyType) {
   return `<span class="badge-platoon badge-duty-guard"><i class="fa-solid fa-shield-halved" style="font-size:0.7rem; margin-right:4px;"></i>กองรักษาการ</span>`;
 }
 
+function getRegionBadgeHtml(region) {
+  if (region === "นครสวรรค์") {
+    return `<span class="badge-region badge-region-nakhon"><i class="fa-solid fa-landmark" style="font-size:0.7rem; margin-right:4px;"></i>นครสวรรค์</span>`;
+  }
+  if (region === "อีสาน") {
+    return `<span class="badge-region badge-region-isan"><i class="fa-solid fa-wheat-awn" style="font-size:0.7rem; margin-right:4px;"></i>อีสาน</span>`;
+  }
+  return `<span style="color:#94a3b8; font-size:0.8rem;">-</span>`;
+}
+
+function getStatusBadgeHtml(status) {
+  if (status === "ดองเวร") {
+    return `<span class="badge-status-dong"><i class="fa-solid fa-triangle-exclamation" style="font-size:0.7rem; margin-right:4px;"></i>ดองเวร</span>`;
+  }
+  return `<span class="badge-status-normal"><i class="fa-solid fa-circle-check" style="font-size:0.7rem; margin-right:4px; color:#16a34a;"></i>ปกติ</span>`;
+}
+
 function renderPersonnelTable() {
   const tbody = document.getElementById("personnelTableBody");
   if (!tbody) return;
@@ -807,6 +968,8 @@ function renderPersonnelTable() {
   const filterBatch = document.getElementById("filterBatch").value;
   const filterRole = document.getElementById("filterRole").value;
   const filterDutyType = document.getElementById("filterDutyType").value;
+  const filterRegion = document.getElementById("filterRegion") ? document.getElementById("filterRegion").value : "";
+  const filterStatus = document.getElementById("filterStatus") ? document.getElementById("filterStatus").value : "";
 
   const filtered = personnelDatabase.filter(p => {
     if (searchText && !p.name.toLowerCase().includes(searchText)) return false;
@@ -814,13 +977,15 @@ function renderPersonnelTable() {
     if (filterBatch && p.batch !== filterBatch) return false;
     if (filterRole && p.role !== filterRole) return false;
     if (filterDutyType && (p.dutyType || "เวรกองรักษาการ") !== filterDutyType) return false;
+    if (filterRegion && (p.region || "") !== filterRegion) return false;
+    if (filterStatus && (p.status || "ปกติ") !== filterStatus) return false;
     return true;
   });
 
   updatePersonnelStats();
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:20px;">ไม่พบข้อมูลกำลังพลตามเงื่อนไขที่ค้นหา</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:20px;">ไม่พบข้อมูลกำลังพลตามเงื่อนไขที่ค้นหา</td></tr>`;
     return;
   }
 
@@ -832,6 +997,8 @@ function renderPersonnelTable() {
       <td><span class="badge-batch">${escapeHtml(p.batch)}</span></td>
       <td><span class="badge-role">${escapeHtml(p.role)}</span></td>
       <td>${getDutyTypeBadgeHtml(p.dutyType || "เวรกองรักษาการ")}</td>
+      <td>${getRegionBadgeHtml(p.region)}</td>
+      <td>${getStatusBadgeHtml(p.status || "ปกติ")}</td>
       <td style="text-align:center;">
         <button class="action-icon-btn edit" onclick="startEditPersonnel('${p.id}')" title="แก้ไข">
           <i class="fa-solid fa-pen-to-square"></i>
@@ -850,6 +1017,8 @@ function resetPersonnelFilters() {
   document.getElementById("filterBatch").value = "";
   document.getElementById("filterRole").value = "";
   document.getElementById("filterDutyType").value = "";
+  if (document.getElementById("filterRegion")) document.getElementById("filterRegion").value = "";
+  if (document.getElementById("filterStatus")) document.getElementById("filterStatus").value = "";
   renderPersonnelTable();
 }
 
@@ -861,17 +1030,19 @@ function handleSavePersonnel(e) {
   const batch = document.getElementById("formBatch").value;
   const role = document.getElementById("formRole").value;
   const dutyType = document.getElementById("formDutyType").value;
+  const region = document.getElementById("formRegion") ? document.getElementById("formRegion").value : "";
+  const status = document.getElementById("formStatus") ? document.getElementById("formStatus").value : "ปกติ";
 
   if (!name) return;
 
   if (idInput) {
     const index = personnelDatabase.findIndex(p => p.id === idInput);
     if (index !== -1) {
-      personnelDatabase[index] = { id: idInput, name, platoon, batch, role, dutyType };
+      personnelDatabase[index] = { id: idInput, name, platoon, batch, role, dutyType, region, status };
     }
   } else {
     const newId = "p_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
-    personnelDatabase.unshift({ id: newId, name, platoon, batch, role, dutyType });
+    personnelDatabase.unshift({ id: newId, name, platoon, batch, role, dutyType, region, status });
   }
 
   savePersonnelDatabase();
@@ -890,6 +1061,8 @@ function startEditPersonnel(id) {
   document.getElementById("formBatch").value = p.batch;
   document.getElementById("formRole").value = p.role;
   document.getElementById("formDutyType").value = p.dutyType || "เวรกองรักษาการ";
+  if (document.getElementById("formRegion")) document.getElementById("formRegion").value = p.region || "";
+  if (document.getElementById("formStatus")) document.getElementById("formStatus").value = p.status || "ปกติ";
 
   document.getElementById("personnelFormTitle").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:#0284c7;"></i> แก้ไขข้อมูล: <b>${escapeHtml(p.name)}</b>`;
   document.getElementById("btnCancelEdit").style.display = "inline-flex";
@@ -900,6 +1073,8 @@ function startEditPersonnel(id) {
 function cancelEditPersonnel() {
   document.getElementById("editPersonnelId").value = "";
   document.getElementById("formName").value = "";
+  if (document.getElementById("formRegion")) document.getElementById("formRegion").value = "";
+  if (document.getElementById("formStatus")) document.getElementById("formStatus").value = "ปกติ";
   document.getElementById("personnelFormTitle").innerHTML = `<i class="fa-solid fa-user-plus"></i> บันทึกข้อมูลกำลังพลใหม่`;
   document.getElementById("btnCancelEdit").style.display = "none";
 }
@@ -925,11 +1100,11 @@ function resetPersonnelToDefault() {
 
 function exportPersonnelExcel() {
   const wsData = [
-    ["ลำดับ", "ชื่อ - สกุล", "หมวด", "ผลัด", "หน้าที่ / สายงาน", "ประเภทเวรที่เข้า"]
+    ["ลำดับ", "ชื่อ - สกุล", "หมวด", "ผลัด", "หน้าที่ / สายงาน", "ประเภทเวรที่เข้า", "พื้นที่", "สถานะเวร"]
   ];
 
   personnelDatabase.forEach((p, idx) => {
-    wsData.push([idx + 1, p.name, p.platoon, p.batch, p.role, p.dutyType || "เวรกองรักษาการ"]);
+    wsData.push([idx + 1, p.name, p.platoon, p.batch, p.role, p.dutyType || "เวรกองรักษาการ", p.region || "-", p.status || "ปกติ"]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);

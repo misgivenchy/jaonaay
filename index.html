@@ -127,12 +127,14 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 50px; text-align: center;">ลำดับ</th>
-                <th style="width: 100px;">หมวด</th>
-                <th style="width: 180px;">ชื่อ - สกุล</th>
-                <th style="width: 80px;">ผลัด</th>
-                <th style="width: 180px;">หน้าที่ / สายงาน (แก้ไขได้ทันที)</th>
-                <th style="width: 170px;">ประเภทเวรที่เข้า</th>
+                <th style="width: 45px; text-align: center;">ลำดับ</th>
+                <th style="width: 85px;">หมวด</th>
+                <th style="width: 160px;">ชื่อ - สกุล</th>
+                <th style="width: 65px;">ผลัด</th>
+                <th style="width: 150px;">หน้าที่ / สายงาน</th>
+                <th style="width: 140px;">ประเภทเวรที่เข้า</th>
+                <th style="width: 130px;">พื้นที่ (นครสวรรค์/อีสาน)</th>
+                <th style="width: 125px;">สถานะเวร</th>
                 <th>ตำแหน่งจัดเวรในตารางอัตโนมัติ</th>
               </tr>
             </thead>
@@ -258,7 +260,7 @@
           </div>
           <form id="personnelForm" onsubmit="handleSavePersonnel(event)">
             <input type="hidden" id="editPersonnelId" value="">
-            <div class="row-inputs-5">
+            <div class="row-inputs-7">
               <div>
                 <label>ชื่อ - สกุล *</label>
                 <input type="text" id="formName" class="form-control" required placeholder="เช่น พลทหาร กรกช ...">
@@ -301,6 +303,21 @@
                   <option value="ผช.สิบเวร">🎖️ ผช.สิบเวร</option>
                 </select>
               </div>
+              <div>
+                <label>พื้นที่ / โซน <span style="font-size:0.75rem; color:#64748b;">(ไม่บังคับ)</span></label>
+                <select id="formRegion" class="form-control">
+                  <option value="">-- ไม่ระบุ --</option>
+                  <option value="นครสวรรค์">🏛️ นครสวรรค์</option>
+                  <option value="อีสาน">🌾 อีสาน</option>
+                </select>
+              </div>
+              <div>
+                <label>สถานะเวร *</label>
+                <select id="formStatus" class="form-control" required>
+                  <option value="ปกติ">🟢 ปกติ</option>
+                  <option value="ดองเวร">🔴 ดองเวร (วันเว้นวัน เน้นเลข 2)</option>
+                </select>
+              </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
               <button type="button" class="btn btn-secondary btn-sm" id="btnCancelEdit" style="display:none;" onclick="cancelEditPersonnel()">
@@ -314,7 +331,7 @@
         </div>
 
         <!-- Filter & Search Bar -->
-        <div class="filter-bar" style="grid-template-columns: 1.2fr 1fr 1fr 1fr 1.2fr auto;">
+        <div class="filter-bar" style="grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr 1.1fr 1fr 1fr auto;">
           <div>
             <input type="text" id="searchPersonnelText" class="form-control" placeholder="🔍 ค้นหาชื่อ-สกุล..." oninput="renderPersonnelTable()">
           </div>
@@ -357,6 +374,20 @@
             </select>
           </div>
           <div>
+            <select id="filterRegion" class="form-control" onchange="renderPersonnelTable()">
+              <option value="">-- ทุกพื้นที่ --</option>
+              <option value="นครสวรรค์">นครสวรรค์</option>
+              <option value="อีสาน">อีสาน</option>
+            </select>
+          </div>
+          <div>
+            <select id="filterStatus" class="form-control" onchange="renderPersonnelTable()">
+              <option value="">-- ทุกสถานะ --</option>
+              <option value="ปกติ">ปกติ</option>
+              <option value="ดองเวร">ดองเวร</option>
+            </select>
+          </div>
+          <div>
             <button class="btn btn-secondary btn-sm" onclick="resetPersonnelFilters()" title="ล้างตัวกรอง">
               <i class="fa-solid fa-arrow-rotate-left"></i>
             </button>
@@ -367,13 +398,15 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 50px;">ลำดับ</th>
+              <th style="width: 45px;">ลำดับ</th>
               <th>ชื่อ - สกุล</th>
-              <th style="width: 100px;">หมวด</th>
-              <th style="width: 80px;">ผลัด</th>
-              <th style="width: 130px;">หน้าที่ / สายงาน</th>
-              <th style="width: 130px;">ประเภทเวรที่เข้า</th>
-              <th style="width: 80px; text-align: center;">จัดการ</th>
+              <th style="width: 85px;">หมวด</th>
+              <th style="width: 70px;">ผลัด</th>
+              <th style="width: 120px;">หน้าที่ / สายงาน</th>
+              <th style="width: 120px;">ประเภทเวร</th>
+              <th style="width: 100px;">พื้นที่</th>
+              <th style="width: 90px;">สถานะ</th>
+              <th style="width: 75px; text-align: center;">จัดการ</th>
             </tr>
           </thead>
           <tbody id="personnelTableBody">

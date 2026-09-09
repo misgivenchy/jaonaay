@@ -247,6 +247,18 @@ body {
   gap: 8px;
 }
 
+.row-inputs-7 {
+  display: grid;
+  grid-template-columns: 1.3fr 0.9fr 0.8fr 1.1fr 1.1fr 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 950px) {
+  .row-inputs-7 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 850px) {
   .row-inputs-5 {
     grid-template-columns: 1fr 1fr;
@@ -297,6 +309,25 @@ body {
   background: #fef2f2;
   border-color: #fecaca;
   color: #991b1b;
+}
+
+.inline-select.region-nakhon {
+  background: #fdf4ff;
+  border-color: #f0abfc;
+  color: #86198f;
+}
+
+.inline-select.region-isan {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.inline-select.status-dong {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #b91c1c;
+  font-weight: 700;
 }
 
 /* Badges */
@@ -362,6 +393,57 @@ body {
   background: #fef2f2;
   color: #991b1b;
   border: 1px solid #fecaca;
+}
+
+.badge-region {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-region-nakhon {
+  background: #fdf4ff;
+  color: #86198f;
+  border: 1px solid #f0abfc;
+}
+
+.badge-region-isan {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-status-normal {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.badge-status-dong {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1.5px solid #f87171;
+  animation: pulseDong 2s infinite;
+}
+
+@keyframes pulseDong {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
 
 .badge-pos {

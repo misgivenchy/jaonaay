@@ -476,6 +476,13 @@ body {
   color: #991b1b;
 }
 
+.badge-pos-exempt {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+  font-weight: 600;
+}
+
 /* Bottom Action Bar */
 .review-bottom-bar {
   background: white;

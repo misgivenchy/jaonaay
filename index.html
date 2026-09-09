@@ -161,6 +161,10 @@
             <span>🎖️ ผช.สิบเวร:</span>
             <b id="summaryAsstCount">0</b> นาย
           </div>
+          <div class="stat-chip" style="color: #64748b;">
+            <span>🍳 ยกเว้นเวร (โรงเลี้ยง/บ้านผบ.):</span>
+            <b id="summaryExemptCount" style="color: #64748b;">0</b> นาย
+          </div>
         </div>
         <div>
           <button class="btn btn-success btn-lg" onclick="generateAndShowRoster()">
@@ -289,11 +293,12 @@
                 <select id="formRole" class="form-control" required>
                   <option value="บก.พัน">บก.พัน</option>
                   <option value="สื่อสาร">สื่อสาร</option>
-                  <option value="สาย 1">สาย 1</option>
                   <option value="สวัสดิการ">สวัสดิการ</option>
                   <option value="คลังน้ำมัน">คลังน้ำมัน</option>
                   <option value="พัฒนากองร้อย">พัฒนากองร้อย</option>
                   <option value="ยย.นอก">ยย.นอก</option>
+                  <option value="โรงเลี้ยง">🍳 โรงเลี้ยง (ยกเว้นเวร)</option>
+                  <option value="บ้านผบ.พัน">🏠 บ้านผบ.พัน (ยกเว้นเวร)</option>
                 </select>
               </div>
               <div>
@@ -359,11 +364,12 @@
               <option value="">-- ทุกหน้าที่ --</option>
               <option value="บก.พัน">บก.พัน</option>
               <option value="สื่อสาร">สื่อสาร</option>
-              <option value="สาย 1">สาย 1</option>
               <option value="สวัสดิการ">สวัสดิการ</option>
               <option value="คลังน้ำมัน">คลังน้ำมัน</option>
               <option value="พัฒนากองร้อย">พัฒนากองร้อย</option>
               <option value="ยย.นอก">ยย.นอก</option>
+              <option value="โรงเลี้ยง">โรงเลี้ยง</option>
+              <option value="บ้านผบ.พัน">บ้านผบ.พัน</option>
             </select>
           </div>
           <div>

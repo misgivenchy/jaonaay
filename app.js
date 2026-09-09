@@ -7,8 +7,11 @@ const MONTH_NAMES_TH = [
 const DAY_NAMES_TH = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 const ROLES_LIST = [
-  "พัฒนากองร้อย", "บก.พัน", "สื่อสาร", "สาย 1", "สวัสดิการ", "คลังน้ำมัน", "ยย.นอก"
+  "พัฒนากองร้อย", "บก.พัน", "สื่อสาร", "สวัสดิการ", "คลังน้ำมัน", "ยย.นอก", "โรงเลี้ยง", "บ้านผบ.พัน"
 ];
+
+// งานที่ไม่ต้องเข้าเวร
+const EXEMPT_ROLES = ["โรงเลี้ยง", "บ้านผบ.พัน"];
 
 const STORAGE_KEY_PERSONNEL_DB = "military_roster_personnel_db";
 
@@ -193,30 +196,37 @@ function renderReviewPersonnelTable() {
     return true;
   });
 
-  // Calculate Guard Summary counts
-  const guardSoldiers = filtered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
-  const asstSoldiers = filtered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
+  // Calculate Guard Summary counts (exclude exempt roles like โรงเลี้ยง, บ้านผบ.พัน)
+  const activeFiltered = filtered.filter(p => !EXEMPT_ROLES.includes(p.role));
+  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
+  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
   
   const mainCount = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").length;
   const satCount = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").length;
   const asstCount = asstSoldiers.length;
+  const exemptCount = filtered.filter(p => EXEMPT_ROLES.includes(p.role)).length;
 
   document.getElementById("summaryMainCount").textContent = mainCount;
   document.getElementById("summarySatCount").textContent = satCount;
   document.getElementById("summaryAsstCount").textContent = asstCount;
+  const elExempt = document.getElementById("summaryExemptCount");
+  if (elExempt) elExempt.textContent = exemptCount;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:25px;">ไม่พบข้อมูลกำลังพลในหมวดนี้</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:25px;">ไม่พบข้อมูลกำลังพลในหมวดนี้</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map((p, idx) => {
+    const isExempt = EXEMPT_ROLES.includes(p.role);
     const isDev = (p.role === "พัฒนากองร้อย");
     const isGuard = ((p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
 
     // Position Badge description
     let posBadgeHtml = "";
-    if (isGuard) {
+    if (isExempt) {
+      posBadgeHtml = `<span class="badge-pos badge-pos-exempt"><i class="fa-solid fa-ban" style="margin-right:4px;"></i>ไม่ต้องเข้าเวร (ยกเว้นเวร)</span>`;
+    } else if (isGuard) {
       if (isDev) {
         posBadgeHtml = `<span class="badge-pos badge-pos-main"><i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>กลุ่มบน (วันปกติ 0-4 + เสาร์ 0)</span>`;
       } else {
@@ -772,8 +782,16 @@ function generateAndShowRoster() {
     return;
   }
 
-  const guardSoldiers = filtered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
-  const asstSoldiers = filtered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
+  // กรองเฉพาะผู้ที่ไม่ได้รับการยกเว้นเวร (โรงเลี้ยง, บ้านผบ.พัน จะไม่ถูกนำมาจัดเข้าเวร)
+  const activeDutySoldiers = filtered.filter(p => !EXEMPT_ROLES.includes(p.role));
+
+  if (activeDutySoldiers.length === 0) {
+    alert("กำลังพลในหมวดที่เลือกได้รับการยกเว้นเวรทั้งหมด ไม่สามารถจัดตารางได้ครับ");
+    return;
+  }
+
+  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
+  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
 
   const devGuards = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").map(p => p.name);
   const nonDevGuards = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").map(p => p.name);
@@ -784,8 +802,8 @@ function generateAndShowRoster() {
   if (asstSoldiers.length > 0) {
     appState.assistantGuards = asstSoldiers.map(p => p.name);
   } else {
-    // If no assistant duty specified, pick 6 soldiers from platoon
-    appState.assistantGuards = filtered.slice(0, 6).map(p => p.name);
+    // If no assistant duty specified, pick 6 soldiers from active duty soldiers
+    appState.assistantGuards = activeDutySoldiers.slice(0, 6).map(p => p.name);
   }
 
   randomizeSchedule();

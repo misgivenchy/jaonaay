@@ -43,7 +43,7 @@ function savePersonnelDatabase() {
 // Application State
 let appState = {
   viewMode: "review", // 'review' | 'schedule'
-  selectedPlatoonFilter: "หมวด 1", // 'หมวด 1' | 'หมวด 2' | 'หมวด 3' | 'all'
+  selectedPlatoons: ["หมวด 1", "หมวด 2"], // Array of selected platoons (minimum 2)
   title: "เวรกองรักษาการ",
   startDay: 1,
   endDay: 10,
@@ -86,6 +86,7 @@ function initApp() {
   syncInputsFromState();
   initEventListeners();
   updatePillCounters();
+  updatePlatoonPillsUI();
   renderReviewPersonnelTable();
 }
 
@@ -127,16 +128,55 @@ function updatePillCounters() {
   if (elAll) elAll.textContent = pAll;
 }
 
-// Change Platoon Selection in Landing Review View
-function setSelectedPlatoonFilter(platoon, btnElement) {
-  appState.selectedPlatoonFilter = platoon;
-  
-  document.querySelectorAll("#platoonPillsGroup .platoon-pill").forEach(btn => {
-    btn.classList.remove("active");
-  });
-  if (btnElement) btnElement.classList.add("active");
-
+// Platoon Multi-Selection Logic (ต้องเลือกอย่างน้อย 2 หมวด)
+function togglePlatoonFilter(platoon) {
+  const index = appState.selectedPlatoons.indexOf(platoon);
+  if (index !== -1) {
+    // If attempting to unselect, check if it would leave fewer than 2 platoons
+    if (appState.selectedPlatoons.length <= 2) {
+      alert("⚠️ ต้องเลือกอย่างน้อย 2 หมวดสำหรับจัดตารางเวรครับ");
+      return;
+    }
+    appState.selectedPlatoons.splice(index, 1);
+  } else {
+    appState.selectedPlatoons.push(platoon);
+  }
+  updatePlatoonPillsUI();
   renderReviewPersonnelTable();
+}
+
+function selectAllPlatoons() {
+  appState.selectedPlatoons = ["หมวด 1", "หมวด 2", "หมวด 3"];
+  updatePlatoonPillsUI();
+  renderReviewPersonnelTable();
+}
+
+function updatePlatoonPillsUI() {
+  const allPlatoons = ["หมวด 1", "หมวด 2", "หมวด 3"];
+  allPlatoons.forEach((platoon, idx) => {
+    const pill = document.getElementById(`pillPlatoon${idx + 1}`);
+    if (pill) {
+      const isSelected = appState.selectedPlatoons.includes(platoon);
+      if (isSelected) {
+        pill.classList.add("active");
+        const icon = pill.querySelector("i");
+        if (icon) icon.style.display = "inline-block";
+      } else {
+        pill.classList.remove("active");
+        const icon = pill.querySelector("i");
+        if (icon) icon.style.display = "none";
+      }
+    }
+  });
+
+  const allPill = document.getElementById("pillSelectAll");
+  if (allPill) {
+    if (appState.selectedPlatoons.length === 3) {
+      allPill.classList.add("active");
+    } else {
+      allPill.classList.remove("active");
+    }
+  }
 }
 
 // Render Review Personnel Table (In-place editable!)
@@ -145,10 +185,10 @@ function renderReviewPersonnelTable() {
   if (!tbody) return;
 
   const searchText = (document.getElementById("searchReviewName").value || "").trim().toLowerCase();
-  const selectedPlatoon = appState.selectedPlatoonFilter;
+  const selectedPlatoons = appState.selectedPlatoons;
 
   const filtered = personnelDatabase.filter(p => {
-    if (selectedPlatoon !== "all" && p.platoon !== selectedPlatoon) return false;
+    if (!selectedPlatoons.includes(p.platoon)) return false;
     if (searchText && !p.name.toLowerCase().includes(searchText)) return false;
     return true;
   });
@@ -572,9 +612,14 @@ function shuffleArray(arr) {
 
 // Switch to Schedule View & Generate Roster
 function generateAndShowRoster() {
-  const selectedPlatoon = appState.selectedPlatoonFilter;
+  const selectedPlatoons = appState.selectedPlatoons || [];
+  if (selectedPlatoons.length < 2) {
+    alert("⚠️ กรุณาเลือกอย่างน้อย 2 หมวดก่อนสร้างตารางเวรครับ");
+    return;
+  }
+
   const filtered = personnelDatabase.filter(p => {
-    if (selectedPlatoon !== "all" && p.platoon !== selectedPlatoon) return false;
+    if (!selectedPlatoons.includes(p.platoon)) return false;
     return true;
   });
 

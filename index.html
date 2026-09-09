@@ -19,6 +19,9 @@
         <span class="badge-tag">ระบบสุ่มเวรเฉลี่ยเท่ากัน</span>
       </h1>
       <div class="header-actions no-print">
+        <a href="public.html" target="_blank" class="btn btn-outline" style="text-decoration: none; color: #1e3a8a; background: #fff; border: 1.5px solid #1e3a8a; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> หน้าสำหรับคนทั่วไป (Public)
+        </a>
         <button class="btn btn-purple" onclick="openPersonnelModal()">
           <i class="fa-solid fa-users-gear"></i> ฐานข้อมูลกำลังพล (หลังบ้าน)
         </button>
@@ -54,7 +57,7 @@
               ตรวจสอบและมอบหมายสายงานกำลังพลประจำหมวด
             </h2>
             <span style="font-size: 0.88rem; color: #64748b;">
-              เลือกหมวดที่จะจัดเข้าเวร และสามารถเปลี่ยนหน้าที่/สายงานของทหารแต่ละนายได้ทันทีก่อนกดสร้างตาราง
+              เลือกหมวดที่จะจัดเข้าเวร (ต้องเลือกอย่างน้อย 2 หมวด) และเปลี่ยนหน้าที่/สายงานของทหารแต่ละนายได้ทันทีก่อนกดสร้างตาราง
             </span>
           </div>
           <div>
@@ -64,23 +67,23 @@
           </div>
         </div>
 
-        <!-- 1. Platoon Selector Pills -->
+        <!-- 1. Platoon Selector Pills (Multi-select, at least 2) -->
         <div class="platoon-selection-bar">
           <span style="font-weight: 700; color: #334155; font-size: 0.95rem;">
-            <i class="fa-solid fa-users-viewfinder"></i> เลือกหมวดที่จะจัดเข้าเวร:
+            <i class="fa-solid fa-users-viewfinder"></i> เลือกหมวดเข้าเวร <span style="color: #dc2626; font-size: 0.82rem; font-weight: normal;">*(เลือกอย่างน้อย 2 หมวด)</span>:
           </span>
           <div class="platoon-pills-group" id="platoonPillsGroup">
-            <button class="platoon-pill active" onclick="setSelectedPlatoonFilter('หมวด 1', this)">
-              หมวด 1 <span class="count" id="countPill1">0</span>
+            <button class="platoon-pill active" id="pillPlatoon1" onclick="togglePlatoonFilter('หมวด 1')">
+              <i class="fa-solid fa-check" style="font-size: 0.8rem;"></i> หมวด 1 <span class="count" id="countPill1">0</span>
             </button>
-            <button class="platoon-pill" onclick="setSelectedPlatoonFilter('หมวด 2', this)">
-              หมวด 2 <span class="count" id="countPill2">0</span>
+            <button class="platoon-pill active" id="pillPlatoon2" onclick="togglePlatoonFilter('หมวด 2')">
+              <i class="fa-solid fa-check" style="font-size: 0.8rem;"></i> หมวด 2 <span class="count" id="countPill2">0</span>
             </button>
-            <button class="platoon-pill" onclick="setSelectedPlatoonFilter('หมวด 3', this)">
-              หมวด 3 <span class="count" id="countPill3">0</span>
+            <button class="platoon-pill" id="pillPlatoon3" onclick="togglePlatoonFilter('หมวด 3')">
+              <i class="fa-solid fa-check" style="font-size: 0.8rem; display: none;"></i> หมวด 3 <span class="count" id="countPill3">0</span>
             </button>
-            <button class="platoon-pill" onclick="setSelectedPlatoonFilter('all', this)">
-              ทุกหมวด <span class="count" id="countPillAll">0</span>
+            <button class="platoon-pill" id="pillSelectAll" onclick="selectAllPlatoons()" style="border-style: dashed;">
+              เลือกครบทั้ง 3 หมวด
             </button>
           </div>
         </div>

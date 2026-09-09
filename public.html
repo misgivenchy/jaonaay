@@ -844,6 +844,15 @@
       document.getElementById("searchInput").addEventListener("input", () => {
         if (isTableVisible) renderFullTable();
       });
+
+      // Auto update if admin changes the schedule in another tab or window
+      window.addEventListener("storage", (e) => {
+        if (e.key === STORAGE_KEY_PUBLISHED) {
+          init();
+          handleSearch();
+          if (isTableVisible) renderFullTable();
+        }
+      });
     });
   </script>
 

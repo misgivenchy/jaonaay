@@ -11,7 +11,7 @@ const ROLES_LIST = [
 ];
 
 // งานที่ไม่ต้องเข้าเวร
-const EXEMPT_ROLES = ["โรงเลี้ยง", "บ้านผบ.พัน", "บก.ร้อย"];
+const EXEMPT_ROLES = ["โรงเลี้ยง", "บ้านผบ.พัน", "บก.ร้อย", "สื่อสาร"];
 
 const STORAGE_KEY_PERSONNEL_DB = "military_roster_personnel_db";
 
@@ -47,7 +47,7 @@ function savePersonnelDatabase() {
 let appState = {
   viewMode: "review", // 'review' | 'schedule'
   selectedPlatoons: ["หมวด 1", "หมวด 2"], // Array of selected platoons (minimum 2)
-  title: "เวรกองรักษาการ",
+  title: "เวรกองรักษาการณ์",
   startDay: 1,
   endDay: 10,
   monthIndex: 8, // 8 = กันยายน (0-indexed)
@@ -198,8 +198,8 @@ function renderReviewPersonnelTable() {
 
   // Calculate Guard Summary counts (exclude exempt roles like โรงเลี้ยง, บ้านผบ.พัน)
   const activeFiltered = filtered.filter(p => !EXEMPT_ROLES.includes(p.role));
-  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
-  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
+  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "เวรกองรักษาการณ์");
+  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "ผช.สิบเวร");
   
   const mainCount = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").length;
   const satCount = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").length;
@@ -220,7 +220,7 @@ function renderReviewPersonnelTable() {
   tbody.innerHTML = filtered.map((p, idx) => {
     const isExempt = EXEMPT_ROLES.includes(p.role);
     const isDev = (p.role === "พัฒนากองร้อย");
-    const isGuard = ((p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
+    const isGuard = ((p.dutyType || "เวรกองรักษาการณ์") === "เวรกองรักษาการณ์");
 
     // Position Badge description
     let posBadgeHtml = "";
@@ -263,15 +263,15 @@ function renderReviewPersonnelTable() {
         </td>
         <td>
           <select class="inline-select ${dutySelectClass}" onchange="updatePersonDutyType('${p.id}', this.value)" title="คลิกเพื่อเปลี่ยนประเภทเวร">
-            <option value="เวรกองรักษาการ" ${isGuard ? 'selected' : ''}>🛡️ กองรักษาการ</option>
-            <option value="ผช.สิบเวร" ${!isGuard ? 'selected' : ''}>🎖️ ผช.สิบเวร</option>
+            <option value="เวรกองรักษาการณ์" ${isGuard ? 'selected' : ''}>กองรักษาการ</option>
+            <option value="ผช.สิบเวร" ${!isGuard ? 'selected' : ''}>ผช.สิบเวร</option>
           </select>
         </td>
         <td>
           <select class="inline-select ${regionSelectClass}" onchange="updatePersonRegion('${p.id}', this.value)" title="เลือกพื้นที่: นครสวรรค์ หรือ อีสาน จะไม่เข้าเวรวันเดียวกัน">
             <option value="" ${!p.region ? 'selected' : ''}>- ไม่ระบุ -</option>
-            <option value="นครสวรรค์" ${p.region === 'นครสวรรค์' ? 'selected' : ''}>🏛️ นครสวรรค์</option>
-            <option value="อีสาน" ${p.region === 'อีสาน' ? 'selected' : ''}>🌾 อีสาน</option>
+            <option value="นครสวรรค์" ${p.region === 'นครสวรรค์' ? 'selected' : ''}>นครสวรรค์</option>
+            <option value="อีสาน" ${p.region === 'อีสาน' ? 'selected' : ''}>อีสาน</option>
           </select>
         </td>
         <td>
@@ -790,8 +790,8 @@ function generateAndShowRoster() {
     return;
   }
 
-  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") === "เวรกองรักษาการ");
-  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
+  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "เวรกองรักษาการณ์");
+  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "ผช.สิบเวร");
 
   const devGuards = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").map(p => p.name);
   const nonDevGuards = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").map(p => p.name);
@@ -994,7 +994,7 @@ function renderPersonnelTable() {
     if (filterPlatoon && p.platoon !== filterPlatoon) return false;
     if (filterBatch && p.batch !== filterBatch) return false;
     if (filterRole && p.role !== filterRole) return false;
-    if (filterDutyType && (p.dutyType || "เวรกองรักษาการ") !== filterDutyType) return false;
+    if (filterDutyType && (p.dutyType || "เวรกองรักษาการณ์") !== filterDutyType) return false;
     if (filterRegion && (p.region || "") !== filterRegion) return false;
     if (filterStatus && (p.status || "ปกติ") !== filterStatus) return false;
     return true;
@@ -1014,7 +1014,7 @@ function renderPersonnelTable() {
       <td>${getPlatoonBadgeHtml(p.platoon)}</td>
       <td><span class="badge-batch">${escapeHtml(p.batch)}</span></td>
       <td><span class="badge-role">${escapeHtml(p.role)}</span></td>
-      <td>${getDutyTypeBadgeHtml(p.dutyType || "เวรกองรักษาการ")}</td>
+      <td>${getDutyTypeBadgeHtml(p.dutyType || "เวรกองรักษาการณ์")}</td>
       <td>${getRegionBadgeHtml(p.region)}</td>
       <td>${getStatusBadgeHtml(p.status || "ปกติ")}</td>
       <td style="text-align:center;">
@@ -1078,7 +1078,7 @@ function startEditPersonnel(id) {
   document.getElementById("formPlatoon").value = p.platoon;
   document.getElementById("formBatch").value = p.batch;
   document.getElementById("formRole").value = p.role;
-  document.getElementById("formDutyType").value = p.dutyType || "เวรกองรักษาการ";
+  document.getElementById("formDutyType").value = p.dutyType || "เวรกองรักษาการณ์";
   if (document.getElementById("formRegion")) document.getElementById("formRegion").value = p.region || "";
   if (document.getElementById("formStatus")) document.getElementById("formStatus").value = p.status || "ปกติ";
 
@@ -1122,7 +1122,7 @@ function exportPersonnelExcel() {
   ];
 
   personnelDatabase.forEach((p, idx) => {
-    wsData.push([idx + 1, p.name, p.platoon, p.batch, p.role, p.dutyType || "เวรกองรักษาการ", p.region || "-", p.status || "ปกติ"]);
+    wsData.push([idx + 1, p.name, p.platoon, p.batch, p.role, p.dutyType || "เวรกองรักษาการณ์", p.region || "-", p.status || "ปกติ"]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);

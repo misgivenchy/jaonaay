@@ -986,3 +986,136 @@ body {
     margin: 8mm 6mm;
   }
 }
+
+/* Mobile Redirect Banner at Top */
+.mobile-redirect-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 10px rgba(30, 58, 138, 0.15);
+}
+.mobile-redirect-banner .banner-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mobile-redirect-banner .btn-banner {
+  background: #ffffff;
+  color: #1e3a8a;
+  font-weight: 700;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.mobile-redirect-banner .btn-banner:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+/* Remove Session Person Button (ปุ่มกากบาท X ลบชื่อออกจากตารางที่จะจัด) */
+.btn-remove-session {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.85rem;
+}
+.btn-remove-session:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
+  transform: scale(1.1);
+}
+
+/* Inline restore button */
+.btn-restore-inline {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: background 0.15s;
+}
+.btn-restore-inline:hover {
+  background: #991b1b;
+}
+
+/* Confirm & Publish Box in View Schedule (ภาพ 2: ปุ่มยืนยันด้านล่างตาราง) */
+.confirm-publish-section {
+  margin-top: 24px;
+  padding: 22px 20px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 2px solid #6ee7b7;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.08);
+}
+.btn-confirm-publish {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-family: 'Prompt', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 14px 32px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-confirm-publish:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(4, 120, 87, 0.45);
+}
+.confirm-publish-desc {
+  margin-top: 10px;
+  color: #065f46;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+/* Publish Success Modal */
+.publish-modal-box {
+  width: 520px;
+  max-width: 95%;
+  border-radius: 16px;
+  padding: 24px;
+}
+.share-box {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.btn-copied {
+  background: #047857 !important;
+  color: #ffffff !important;
+}
+

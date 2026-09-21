@@ -47,7 +47,8 @@ function savePersonnelDatabase() {
 let appState = {
   viewMode: "review", // 'review' | 'schedule'
   selectedPlatoons: ["หมวด 1", "หมวด 2"], // Array of selected platoons (minimum 2)
-  title: "เวรกองรักษาการณ์",
+  sessionExcluded: [], // Array of personnel IDs temporarily excluded from current scheduling session
+  title: "เวรกองรักษาการ",
   startDay: 1,
   endDay: 10,
   monthIndex: 8, // 8 = กันยายน (0-indexed)
@@ -182,6 +183,20 @@ function updatePlatoonPillsUI() {
   }
 }
 
+// Temporary Session Exclusion Logic (นำชื่อออกเฉพาะตารางที่จะจัด ไม่ลบออกจากระบบหลังบ้าน)
+function excludePersonFromSession(id) {
+  if (!appState.sessionExcluded) appState.sessionExcluded = [];
+  if (!appState.sessionExcluded.includes(id)) {
+    appState.sessionExcluded.push(id);
+  }
+  renderReviewPersonnelTable();
+}
+
+function restoreAllExcluded() {
+  appState.sessionExcluded = [];
+  renderReviewPersonnelTable();
+}
+
 // Render Review Personnel Table (In-place editable!)
 function renderReviewPersonnelTable() {
   const tbody = document.getElementById("reviewPersonnelTableBody");
@@ -189,17 +204,19 @@ function renderReviewPersonnelTable() {
 
   const searchText = (document.getElementById("searchReviewName").value || "").trim().toLowerCase();
   const selectedPlatoons = appState.selectedPlatoons;
+  const sessionExcluded = appState.sessionExcluded || [];
 
   const filtered = personnelDatabase.filter(p => {
     if (!selectedPlatoons.includes(p.platoon)) return false;
+    if (sessionExcluded.includes(p.id)) return false; // Excluded for this session
     if (searchText && !p.name.toLowerCase().includes(searchText)) return false;
     return true;
   });
 
-  // Calculate Guard Summary counts (exclude exempt roles like โรงเลี้ยง, บ้านผบ.พัน)
+  // Calculate Guard Summary counts (exclude exempt roles like โรงเลี้ยง, บ้านผบ.พัน, บก.ร้อย, สื่อสาร)
   const activeFiltered = filtered.filter(p => !EXEMPT_ROLES.includes(p.role));
-  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "เวรกองรักษาการณ์");
-  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "ผช.สิบเวร");
+  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") !== "ผช.สิบเวร");
+  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
   
   const mainCount = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").length;
   const satCount = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").length;
@@ -212,15 +229,27 @@ function renderReviewPersonnelTable() {
   const elExempt = document.getElementById("summaryExemptCount");
   if (elExempt) elExempt.textContent = exemptCount;
 
+  // Show/Update temporary excluded chip in summary bar
+  const elExcludedChip = document.getElementById("chipExcludedContainer");
+  const elExcludedCount = document.getElementById("summaryExcludedCount");
+  if (elExcludedChip && elExcludedCount) {
+    if (sessionExcluded.length > 0) {
+      elExcludedCount.textContent = sessionExcluded.length;
+      elExcludedChip.style.display = "inline-flex";
+    } else {
+      elExcludedChip.style.display = "none";
+    }
+  }
+
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:25px;">ไม่พบข้อมูลกำลังพลในหมวดนี้</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:25px;">ไม่พบข้อมูลกำลังพลในหมวดนี้ ${sessionExcluded.length > 0 ? '(มีบางนายถูกนำออกชั่วคราว)' : ''}</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map((p, idx) => {
     const isExempt = EXEMPT_ROLES.includes(p.role);
     const isDev = (p.role === "พัฒนากองร้อย");
-    const isGuard = ((p.dutyType || "เวรกองรักษาการณ์") === "เวรกองรักษาการณ์");
+    const isGuard = ((p.dutyType || "เวรกองรักษาการ") !== "ผช.สิบเวร");
 
     // Position Badge description
     let posBadgeHtml = "";
@@ -263,15 +292,15 @@ function renderReviewPersonnelTable() {
         </td>
         <td>
           <select class="inline-select ${dutySelectClass}" onchange="updatePersonDutyType('${p.id}', this.value)" title="คลิกเพื่อเปลี่ยนประเภทเวร">
-            <option value="เวรกองรักษาการณ์" ${isGuard ? 'selected' : ''}>กองรักษาการ</option>
-            <option value="ผช.สิบเวร" ${!isGuard ? 'selected' : ''}>ผช.สิบเวร</option>
+            <option value="เวรกองรักษาการ" ${isGuard ? 'selected' : ''}>🛡️ กองรักษาการ</option>
+            <option value="ผช.สิบเวร" ${!isGuard ? 'selected' : ''}>🎖️ ผช.สิบเวร</option>
           </select>
         </td>
         <td>
           <select class="inline-select ${regionSelectClass}" onchange="updatePersonRegion('${p.id}', this.value)" title="เลือกพื้นที่: นครสวรรค์ หรือ อีสาน จะไม่เข้าเวรวันเดียวกัน">
             <option value="" ${!p.region ? 'selected' : ''}>- ไม่ระบุ -</option>
-            <option value="นครสวรรค์" ${p.region === 'นครสวรรค์' ? 'selected' : ''}>นครสวรรค์</option>
-            <option value="อีสาน" ${p.region === 'อีสาน' ? 'selected' : ''}>อีสาน</option>
+            <option value="นครสวรรค์" ${p.region === 'นครสวรรค์' ? 'selected' : ''}>🏛️ นครสวรรค์</option>
+            <option value="อีสาน" ${p.region === 'อีสาน' ? 'selected' : ''}>🌾 อีสาน</option>
           </select>
         </td>
         <td>
@@ -281,6 +310,11 @@ function renderReviewPersonnelTable() {
           </select>
         </td>
         <td>${posBadgeHtml}</td>
+        <td style="text-align:center;">
+          <button type="button" class="btn-remove-session" onclick="excludePersonFromSession('${p.id}')" title="ลบชื่อนี้ออกจากตารางที่จะจัด (ไม่ลบออกจากฐานข้อมูลหลังบ้าน)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </td>
       </tr>
     `;
   }).join("");
@@ -570,6 +604,20 @@ function generateSingleSchedule() {
           const isDongB = isPersonDong(b) ? 1 : 0;
           if (isDongA !== isDongB) return isDongB - isDongA;
 
+          // Soft pairing: พยายามจัดให้อีสานเข้ากับอีสาน, นครสวรรค์เข้ากับนครสวรรค์
+          const regA = getPersonRegion(a);
+          const regB = getPersonRegion(b);
+          if (hasIsan) {
+            const isanA = (regA === "อีสาน") ? 1 : 0;
+            const isanB = (regB === "อีสาน") ? 1 : 0;
+            if (isanA !== isanB) return isanB - isanA;
+          }
+          if (hasNakhon) {
+            const nakhonA = (regA === "นครสวรรค์") ? 1 : 0;
+            const nakhonB = (regB === "นครสวรรค์") ? 1 : 0;
+            if (nakhonA !== nakhonB) return nakhonB - nakhonA;
+          }
+
           if (dutyCounts[a] !== dutyCounts[b]) return dutyCounts[a] - dutyCounts[b];
           const gapA = dayIdx - lastWorkedDay[a];
           const gapB = dayIdx - lastWorkedDay[b];
@@ -681,8 +729,24 @@ function generateSingleSchedule() {
       const minCount = Math.min(...pool.map(n => asstDutyCounts[n]));
       const minPool = pool.filter(n => asstDutyCounts[n] === minCount);
 
-      // If any in minPool is dong-waen, prioritize them
-      minPool.sort((a, b) => (isPersonDong(b) ? 1 : 0) - (isPersonDong(a) ? 1 : 0));
+      // Soft pairing for assistant: prefer same region as today's guards
+      if (guardHasIsan) {
+        minPool.sort((a, b) => {
+          const isanA = (getPersonRegion(a) === "อีสาน") ? 1 : 0;
+          const isanB = (getPersonRegion(b) === "อีสาน") ? 1 : 0;
+          if (isanA !== isanB) return isanB - isanA;
+          return (isPersonDong(b) ? 1 : 0) - (isPersonDong(a) ? 1 : 0);
+        });
+      } else if (guardHasNakhon) {
+        minPool.sort((a, b) => {
+          const nakhonA = (getPersonRegion(a) === "นครสวรรค์") ? 1 : 0;
+          const nakhonB = (getPersonRegion(b) === "นครสวรรค์") ? 1 : 0;
+          if (nakhonA !== nakhonB) return nakhonB - nakhonA;
+          return (isPersonDong(b) ? 1 : 0) - (isPersonDong(a) ? 1 : 0);
+        });
+      } else {
+        minPool.sort((a, b) => (isPersonDong(b) ? 1 : 0) - (isPersonDong(a) ? 1 : 0));
+      }
 
       const chosen = minPool[0];
       if (chosen) {
@@ -693,11 +757,45 @@ function generateSingleSchedule() {
     });
   }
 
+  // Cross-check all days for:
+  // 1. Strict region conflicts (ห้าม นครสวรรค์ อยู่วันเดียวกับ อีสาน เด็ดขาด)
+  // 2. Region soft pairing rewards (อีสาน เข้ากับ อีสาน, นครสวรรค์ เข้ากับ นครสวรรค์)
+  let totalPairingBonus = 0;
+  for (let dayIdx = 0; dayIdx < totalDays; dayIdx++) {
+    const todayPersonnel = [];
+    allMain.forEach(n => { if (schedule[n] && schedule[n][dayIdx] !== null) todayPersonnel.push(n); });
+    satGuards.forEach(n => { if (schedule[n] && schedule[n][dayIdx] !== null) todayPersonnel.push(n); });
+    asstGuards.forEach(n => { if (assistantSchedule[n] && assistantSchedule[n][dayIdx]) todayPersonnel.push(n); });
+
+    const todayRegions = todayPersonnel.map(n => getPersonRegion(n)).filter(Boolean);
+    const nakhonCount = todayRegions.filter(r => r === "นครสวรรค์").length;
+    const isanCount = todayRegions.filter(r => r === "อีสาน").length;
+
+    // HARD CONSTRAINT: ห้าม นครสวรรค์ + อีสาน อยู่วันเดียวกันเด็ดขาด
+    if (nakhonCount > 0 && isanCount > 0) {
+      totalRegionViolations += (nakhonCount + isanCount) * 10;
+    }
+
+    // SOFT PAIRING: พยายามจัดให้ภูมิภาคเดียวกันเข้าด้วยกัน
+    if (nakhonCount >= 2) {
+      totalPairingBonus += nakhonCount * 30000;
+    }
+    if (isanCount >= 2) {
+      totalPairingBonus += isanCount * 30000;
+    }
+    if (nakhonCount === 1) totalPairingBonus -= 8000;
+    if (isanCount === 1) totalPairingBonus -= 8000;
+  }
+
   const maxDuty = Math.max(...Object.values(dutyCounts), 0);
   const minDuty = Math.min(...Object.values(dutyCounts), 0);
   const dutySpread = maxDuty - minDuty;
 
-  const totalScore = (totalRegionViolations * 500000) + (totalGapViolations * 100000) + (dutySpread * 5000) + totalRepeatPenalty;
+  const totalScore = (totalRegionViolations * 10000000) 
+    + (totalGapViolations * 100000) 
+    + (dutySpread * 5000) 
+    + totalRepeatPenalty 
+    - totalPairingBonus;
 
   return {
     schedule,
@@ -706,16 +804,16 @@ function generateSingleSchedule() {
   };
 }
 
-// Master Randomizer
+// Master Randomizer (จำลองตารางหลายรอบเพื่อคัดเลือกตารางที่ตรงเงื่อนไขดีที่สุด)
 function randomizeSchedule() {
   let bestCandidate = null;
-  const attempts = 150;
+  const attempts = 200;
 
   for (let i = 0; i < attempts; i++) {
     const candidate = generateSingleSchedule();
     if (!bestCandidate || candidate.score < bestCandidate.score) {
       bestCandidate = candidate;
-      if (candidate.score === 0) break;
+      if (candidate.score < -100000) break; // Excellent candidate found
     }
   }
 
@@ -755,6 +853,120 @@ function savePublishedSchedule() {
   }
 }
 
+// Compress data for sharing via URL hash so mobile phones can open and view immediately
+function compressPublishedData(d) {
+  try {
+    const compact = {
+      t: d.title,
+      s: d.startDay,
+      e: d.endDay,
+      m: d.monthIndex,
+      y: d.yearBE,
+      mg: d.mainGuards,
+      sg: d.saturdayGuards,
+      ag: d.assistantGuards,
+      sc: d.schedule,
+      asc: d.assistantSchedule,
+      at: d.publishedAt || new Date().toISOString()
+    };
+    const json = JSON.stringify(compact);
+    const utf8Bytes = encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+      return String.fromCharCode('0x' + p1);
+    });
+    return btoa(utf8Bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  } catch (e) {
+    console.error("Compress error", e);
+    return "";
+  }
+}
+
+// Confirm and Publish Schedule to Public Page
+function confirmAndPublishSchedule() {
+  savePublishedSchedule();
+  
+  let publishedObj = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PUBLISHED);
+    if (raw) publishedObj = JSON.parse(raw);
+  } catch(e) {}
+  
+  if (!publishedObj) {
+    alert("เกิดข้อผิดพลาดในการบันทึกตารางเวร");
+    return;
+  }
+  
+  const compressed = compressPublishedData(publishedObj);
+  const loc = window.location;
+  const basePath = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+  const publicUrl = `${loc.origin}${basePath}public.html#d=${compressed}`;
+  
+  // Open publish success modal
+  const modal = document.getElementById("publishSuccessModal");
+  if (modal) {
+    const elInfo = document.getElementById("publishModalInfo");
+    if (elInfo) {
+      const totalSoldiers = (publishedObj.mainGuards || []).length + (publishedObj.saturdayGuards || []).length + (publishedObj.assistantGuards || []).length;
+      elInfo.innerHTML = `
+        <span class="info-badge date"><i class="fa-solid fa-calendar-day"></i> ${publishedObj.startDay} - ${publishedObj.endDay} ${publishedObj.monthName} ${publishedObj.yearBE}</span>
+        <span class="info-badge"><i class="fa-solid fa-users"></i> กำลังพล ${totalSoldiers} นาย</span>
+      `;
+    }
+    
+    const elLinkInput = document.getElementById("publishModalLinkInput");
+    if (elLinkInput) elLinkInput.value = publicUrl;
+    
+    const elQr = document.getElementById("publishModalQrCode");
+    if (elQr) {
+      elQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicUrl)}`;
+    }
+    
+    modal.classList.add("active");
+  } else {
+    alert("✅ เผยแพร่ตารางเวรไปยังหน้าบุคคลทั่วไปเรียบร้อยแล้ว!");
+  }
+}
+
+function closePublishModal() {
+  const modal = document.getElementById("publishSuccessModal");
+  if (modal) modal.classList.remove("active");
+}
+
+function copyShareableLink() {
+  const input = document.getElementById("publishModalLinkInput");
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  
+  const copySuccess = () => {
+    const btn = document.getElementById("btnCopyLink");
+    if (btn) {
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> คัดลอกสำเร็จ!';
+      btn.classList.add("btn-copied");
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove("btn-copied");
+      }, 2500);
+    }
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(input.value).then(copySuccess).catch(() => {
+      document.execCommand("copy");
+      copySuccess();
+    });
+  } else {
+    document.execCommand("copy");
+    copySuccess();
+  }
+}
+
+function openPublicPage() {
+  const input = document.getElementById("publishModalLinkInput");
+  const url = (input && input.value) ? input.value : "public.html";
+  window.open(url, "_blank");
+}
+
 // Shuffle Helper
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -772,8 +984,11 @@ function generateAndShowRoster() {
     return;
   }
 
+  const sessionExcluded = appState.sessionExcluded || [];
+
   const filtered = personnelDatabase.filter(p => {
     if (!selectedPlatoons.includes(p.platoon)) return false;
+    if (sessionExcluded.includes(p.id)) return false; // Filter out session-excluded soldiers
     return true;
   });
 
@@ -782,7 +997,7 @@ function generateAndShowRoster() {
     return;
   }
 
-  // กรองเฉพาะผู้ที่ไม่ได้รับการยกเว้นเวร (โรงเลี้ยง, บ้านผบ.พัน จะไม่ถูกนำมาจัดเข้าเวร)
+  // กรองเฉพาะผู้ที่ไม่ได้รับการยกเว้นเวร (สื่อสาร, โรงเลี้ยง, บ้านผบ.พัน, บก.ร้อย)
   const activeDutySoldiers = filtered.filter(p => !EXEMPT_ROLES.includes(p.role));
 
   if (activeDutySoldiers.length === 0) {
@@ -790,8 +1005,8 @@ function generateAndShowRoster() {
     return;
   }
 
-  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "เวรกองรักษาการณ์");
-  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "ผช.สิบเวร");
+  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") !== "ผช.สิบเวร");
+  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
 
   const devGuards = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").map(p => p.name);
   const nonDevGuards = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").map(p => p.name);

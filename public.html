@@ -393,10 +393,29 @@
       font-weight: 700;
       font-size: 0.75rem;
     }
-    .mil-table .th-name { background: #b6d7a8; font-weight: 700; text-align: left; padding-left: 8px; }
+    .mil-table .th-name { 
+      background: #b6d7a8; 
+      font-weight: 700; 
+      text-align: left; 
+      padding-left: 8px; 
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      box-shadow: 2px 0 4px rgba(0,0,0,0.08);
+    }
     .mil-table .th-day { background: #c9daf8; }
     .mil-table .th-date { background: #ffe599; }
-    .mil-table .td-name { text-align: left; padding-left: 8px; font-weight: 600; white-space: nowrap; }
+    .mil-table .td-name { 
+      text-align: left; 
+      padding-left: 8px; 
+      font-weight: 600; 
+      white-space: nowrap; 
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #ffffff;
+      box-shadow: 2px 0 4px rgba(0,0,0,0.08);
+    }
     .mil-table .sat-cell { background: #fce5cd; }
     .mil-table .sun-cell { background: #f4cccc; }
     .mil-table .asst-header { background: #cc0000; color: #fff; font-weight: 700; }
@@ -404,6 +423,85 @@
     .mil-table .spacer-row td { border: none; height: 6px; background: transparent; }
     .mil-table .highlight-name { background: #fef08a !important; }
     .mil-table .highlight-cell { background: #bbf7d0 !important; font-weight: 800; }
+
+    /* Quick names chips */
+    .quick-names-section {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+    .quick-names-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .quick-names-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 130px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+    .name-chip {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      font-family: 'Prompt', sans-serif;
+    }
+    .name-chip:hover, .name-chip.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    /* Clear search button */
+    .search-clear-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #cbd5e1;
+      color: #475569;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.15s;
+    }
+    .search-clear-btn:hover {
+      background: #94a3b8;
+      color: #ffffff;
+    }
+
+    .duty-summary-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: #eff6ff;
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+    }
 
     /* Footer */
     .footer {
@@ -416,13 +514,15 @@
     /* Mobile responsive */
     @media (max-width: 600px) {
       .hero { padding: 24px 16px 22px; }
-      .hero h1 { font-size: 1.2rem; }
+      .hero h1 { font-size: 1.25rem; }
       .main { padding: 0 12px; }
-      .info-card, .search-card, .results-card, .full-table-card { padding: 16px; border-radius: 12px; }
-      .person-card { padding: 14px 16px; }
-      .duty-day-item { padding: 8px 10px; gap: 10px; }
+      .info-card, .search-card, .results-card, .full-table-card { padding: 16px; border-radius: 14px; }
+      .person-card { padding: 14px 16px; border-radius: 12px; }
+      .duty-day-item { padding: 9px 10px; gap: 10px; }
       .info-badges { gap: 6px; }
-      .info-badge { font-size: 0.78rem; padding: 4px 10px; }
+      .info-badge { font-size: 0.8rem; padding: 4px 10px; }
+      .search-input { font-size: 1rem; padding: 12px 38px 12px 38px; }
+      .name-chip { font-size: 0.8rem; padding: 4px 10px; }
     }
   </style>
 </head>
@@ -453,6 +553,19 @@
       <div class="search-wrapper">
         <i class="fa-solid fa-user"></i>
         <input type="text" id="searchInput" class="search-input" placeholder="พิมพ์ชื่อหรือนามสกุล เช่น กรกช" autocomplete="off">
+        <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearch()" title="ล้างคำค้นหา">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Quick Name Chips (กดแตะชื่อเพื่อดูเวรทันที) -->
+      <div class="quick-names-section" id="quickNamesSection" style="display:none;">
+        <div class="quick-names-title">
+          <i class="fa-solid fa-hand-pointer"></i> หรือแตะชื่อเพื่อดูวันเวรทันที:
+        </div>
+        <div class="quick-names-list" id="quickNamesList">
+          <!-- Populated by JS -->
+        </div>
       </div>
     </div>
 
@@ -464,18 +577,37 @@
       <button class="full-table-toggle" id="toggleTableBtn" onclick="toggleFullTable()">
         <i class="fa-solid fa-table"></i> ดูตารางเวรเต็มรูปแบบ
       </button>
-      <div id="fullTableContent" style="display:none;"></div>
+      <div id="fullTableContent" style="display:none; overflow-x:auto;"></div>
     </div>
 
     <!-- No Schedule State -->
     <div class="no-schedule" id="noScheduleState">
       <i class="fa-solid fa-calendar-xmark"></i>
-      <h3>ยังไม่มีตารางเวร</h3>
-      <p>ผู้ดูแลยังไม่ได้สร้างตารางเวรในระบบ</p>
+      <h3>ยังไม่มีตารางเวรในเครื่องนี้</h3>
+      <p style="margin-bottom:18px;">หากผู้ดูแลจัดตารางและส่งลิงก์มาให้ใน LINE สามารถแตะเปิดจากลิงก์นั้นได้ทันที</p>
+      
+      <!-- Paste Link Box for Mobile Users -->
+      <div style="max-width:440px; margin:0 auto; padding:16px; background:#fff; border-radius:12px; border:1px solid #cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:left;">
+        <label style="display:block; font-size:0.88rem; font-weight:600; color:#334155; margin-bottom:6px;">
+          <i class="fa-solid fa-paste"></i> วางลิงก์หรือรหัสตารางเวรที่ได้รับ:
+        </label>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="pasteLinkInput" class="search-input" placeholder="วางลิงก์ตารางเวร..." style="padding:10px; font-size:0.9rem;">
+          <button type="button" onclick="loadPastedLink()" style="background:#1e3a8a; color:#fff; border:none; padding:10px 16px; border-radius:10px; font-weight:600; font-family:'Prompt',sans-serif; cursor:pointer; white-space:nowrap;">
+            เปิดตาราง
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <a href="index.html" style="color:#2563eb; text-decoration:none; font-size:0.9rem;">
+          <i class="fa-solid fa-gear"></i> สำหรับผู้ดูแล: ไปยังหน้าสร้างตารางเวร
+        </a>
+      </div>
     </div>
 
     <div class="footer">
-      ระบบจัดตารางเวรกองรักษาการ — ข้อมูลอัปเดตอัตโนมัติเมื่อผู้ดูแลแก้ไขตาราง
+      ระบบจัดตารางเวรกองรักษาการ — ข้อมูลอัปเดตอัตโนมัติเมื่อผู้ดูแลเผยแพร่ตาราง
     </div>
   </div>
 
@@ -492,8 +624,72 @@
     let publishedData = null;
     let isTableVisible = false;
 
-    // Load data
+    // Decompress helper for hash parameters #d=
+    function decompressPublishedData(str) {
+      try {
+        let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const json = decodeURIComponent(Array.prototype.map.call(atob(b64), (c) => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const c = JSON.parse(json);
+        
+        const days = [];
+        const start = parseInt(c.s, 10);
+        const end = parseInt(c.e, 10);
+        const yearCE = c.y - 543;
+        const month = c.m;
+        for (let d = start; d <= end; d++) {
+          const dateObj = new Date(yearCE, month, d);
+          const dayOfWeekIndex = dateObj.getDay();
+          days.push({
+            dateNumber: d,
+            dayOfWeekIndex: dayOfWeekIndex,
+            dayNameTh: DAY_NAMES_SHORT[dayOfWeekIndex],
+            isSaturday: dayOfWeekIndex === 6,
+            isSunday: dayOfWeekIndex === 0,
+            isWeekend: dayOfWeekIndex === 0 || dayOfWeekIndex === 6
+          });
+        }
+        
+        return {
+          title: c.t,
+          startDay: c.s,
+          endDay: c.e,
+          monthIndex: c.m,
+          monthName: MONTH_NAMES_TH[c.m],
+          yearBE: c.y,
+          yearCE: c.y - 543,
+          days: days,
+          mainGuards: c.mg || [],
+          saturdayGuards: c.sg || [],
+          assistantGuards: c.ag || [],
+          schedule: c.sc || {},
+          assistantSchedule: c.asc || {},
+          publishedAt: c.at
+        };
+      } catch(e) {
+        console.error("Decompress error", e);
+        return null;
+      }
+    }
+
+    // Load data from URL hash #d= or localStorage
     function loadPublished() {
+      // 1. Check URL hash parameter #d= (เปิดผ่านลิงก์หรือสแกน QR Code จากโทรศัพท์)
+      if (window.location.hash && window.location.hash.startsWith("#d=")) {
+        const hashStr = window.location.hash.substring(3);
+        const decompressed = decompressPublishedData(hashStr);
+        if (decompressed) {
+          publishedData = decompressed;
+          try {
+            localStorage.setItem(STORAGE_KEY_PUBLISHED, JSON.stringify(decompressed));
+          } catch(e) {}
+          return true;
+        }
+      }
+
+      // 2. Check localStorage
       try {
         const raw = localStorage.getItem(STORAGE_KEY_PUBLISHED);
         if (raw) {
@@ -504,6 +700,33 @@
         console.warn("Could not load published schedule", e);
       }
       return false;
+    }
+
+    // Manual paste loader for mobile users
+    function loadPastedLink() {
+      const input = document.getElementById("pasteLinkInput");
+      if (!input) return;
+      let text = input.value.trim();
+      if (!text) {
+        alert("กรุณาวางลิงก์หรือรหัสตารางเวรก่อนครับ");
+        return;
+      }
+      let hash = "";
+      if (text.includes("#d=")) {
+        hash = text.substring(text.indexOf("#d=") + 3);
+      } else {
+        hash = text;
+      }
+      const decompressed = decompressPublishedData(hash);
+      if (decompressed) {
+        publishedData = decompressed;
+        try {
+          localStorage.setItem(STORAGE_KEY_PUBLISHED, JSON.stringify(decompressed));
+        } catch(e) {}
+        init();
+      } else {
+        alert("ไม่สามารถเปิดตารางเวรจากรหัสหรือลิงก์นี้ได้ กรุณาตรวจสอบลิงก์อีกครั้งครับ");
+      }
     }
 
     // Escape HTML
@@ -541,6 +764,9 @@
         </span>
       `;
 
+      // Setup quick name chips
+      renderQuickNameChips();
+
       // Setup search
       document.getElementById("searchInput").addEventListener("input", handleSearch);
 
@@ -548,12 +774,55 @@
       showEmptySearch();
     }
 
+    function renderQuickNameChips() {
+      if (!publishedData) return;
+      const allNames = new Set([
+        ...(publishedData.mainGuards || []),
+        ...(publishedData.saturdayGuards || []),
+        ...(publishedData.assistantGuards || [])
+      ]);
+      const sorted = Array.from(allNames).sort((a, b) => a.localeCompare(b, 'th'));
+      const container = document.getElementById("quickNamesList");
+      const sec = document.getElementById("quickNamesSection");
+      if (!container || !sec) return;
+
+      if (sorted.length === 0) {
+        sec.style.display = "none";
+        return;
+      }
+
+      sec.style.display = "block";
+      container.innerHTML = sorted.map(name => `
+        <button type="button" class="name-chip" onclick="selectQuickName('${escapeHtml(name)}')">
+          ${escapeHtml(name)}
+        </button>
+      `).join("");
+    }
+
+    function selectQuickName(name) {
+      const input = document.getElementById("searchInput");
+      if (input) {
+        input.value = name;
+        handleSearch();
+        window.scrollTo({ top: input.offsetTop - 20, behavior: 'smooth' });
+      }
+    }
+
+    function clearSearch() {
+      const input = document.getElementById("searchInput");
+      if (input) {
+        input.value = "";
+        handleSearch();
+        input.focus();
+      }
+    }
+
     function showEmptySearch() {
       document.getElementById("resultsContainer").innerHTML = `
         <div class="results-card">
           <div class="empty-state">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <p>พิมพ์ชื่อเพื่อค้นหาวันที่มีเวร</p>
+            <p>พิมพ์ชื่อหรือแตะปุ่มชื่อด้านบนเพื่อดูวันเวร</p>
             <p class="hint">ค้นหาได้ทั้งชื่อและนามสกุล</p>
           </div>
         </div>
@@ -561,7 +830,24 @@
     }
 
     function handleSearch() {
-      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+      const input = document.getElementById("searchInput");
+      const clearBtn = document.getElementById("searchClearBtn");
+      const query = (input.value || "").trim().toLowerCase();
+
+      if (clearBtn) {
+        clearBtn.style.display = query ? "flex" : "none";
+      }
+
+      // Update active state on name chips
+      const chips = document.querySelectorAll(".name-chip");
+      chips.forEach(chip => {
+        if (query && chip.textContent.trim().toLowerCase().includes(query)) {
+          chip.classList.add("active");
+        } else {
+          chip.classList.remove("active");
+        }
+      });
+
       if (!query || !publishedData) {
         showEmptySearch();
         return;
@@ -685,6 +971,7 @@
         <div class="person-card">
           <div class="person-name-row">
             <span class="person-name"><i class="fa-solid fa-user" style="color:var(--muted); font-size:0.9rem;"></i> ${escapeHtml(person.name)}</span>
+            ${dutyDays.length > 0 ? `<span class="duty-summary-badge"><i class="fa-solid fa-calendar-check" style="color:var(--primary);"></i> มีเวรทั้งหมด ${dutyDays.length} วัน</span>` : ''}
           </div>
       `;
 
@@ -708,7 +995,7 @@
           } else {
             if (di.isSaturday) iconClass = 'sat';
             else if (di.isSunday) iconClass = 'sun';
-            dutyLabel = 'เวรกองรักษาการ';
+            dutyLabel = `เวรกองรักษาการ (ผลัดที่ ${dd.value})`;
           }
 
           html += `
@@ -718,7 +1005,7 @@
                 <div class="full-date">${dateStr}</div>
                 <div class="duty-type-label">${dutyLabel}</div>
               </div>
-              ${dd.type === 'guard' ? `<div class="day-number-badge">${dd.value}</div>` : `<div class="day-number-badge asst-badge"><i class="fa-solid fa-check" style="font-size:0.75rem;"></i></div>`}
+              ${dd.type === 'guard' ? `<div class="day-number-badge" title="ผลัดที่ ${dd.value}">${dd.value}</div>` : `<div class="day-number-badge asst-badge" title="ผช.สิบเวร"><i class="fa-solid fa-check" style="font-size:0.75rem;"></i></div>`}
             </li>
           `;
         });

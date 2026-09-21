@@ -11,6 +11,17 @@
 
   <div class="container">
     
+    <!-- Mobile Redirect Banner for General Soldiers -->
+    <div class="mobile-redirect-banner no-print">
+      <div class="banner-text">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <span>กำลังพลต้องการดูตารางเวร / ค้นหาชื่อตัวเอง?</span>
+      </div>
+      <a href="public.html" class="btn btn-sm btn-banner">
+        <i class="fa-solid fa-magnifying-glass"></i> เปิดหน้าค้นหาเวร (Public)
+      </a>
+    </div>
+
     <!-- Top Header -->
     <header class="app-header">
       <h1>
@@ -136,6 +147,7 @@
                 <th style="width: 130px;">พื้นที่ (นครสวรรค์/อีสาน)</th>
                 <th style="width: 125px;">สถานะเวร</th>
                 <th>ตำแหน่งจัดเวรในตารางอัตโนมัติ</th>
+                <th style="width: 50px; text-align: center;" title="นำชื่อนี้ออกจากตารางที่จะจัด (ไม่ลบออกจากระบบหลังบ้าน)">นำออก</th>
               </tr>
             </thead>
             <tbody id="reviewPersonnelTableBody">
@@ -162,8 +174,15 @@
             <b id="summaryAsstCount">0</b> นาย
           </div>
           <div class="stat-chip" style="color: #64748b;">
-            <span>🍳 ยกเว้นเวร (โรงเลี้ยง/บ้านผบ.):</span>
+            <span>🍳 ยกเว้นเวร (สื่อสาร/บก.ร้อย/บ้านผบ./โรงเลี้ยง):</span>
             <b id="summaryExemptCount" style="color: #64748b;">0</b> นาย
+          </div>
+          <div class="stat-chip chip-excluded" id="chipExcludedContainer" style="display:none; background:#fee2e2; border-color:#fca5a5; color:#991b1b;">
+            <span>🚫 นำออกชั่วคราว:</span>
+            <b id="summaryExcludedCount">0</b> นาย
+            <button type="button" class="btn-restore-inline" onclick="restoreAllExcluded()" title="คืนชื่อทั้งหมดกลับมาในตาราง">
+              <i class="fa-solid fa-rotate-left"></i> คืนชื่อทั้งหมด
+            </button>
           </div>
         </div>
         <div>
@@ -217,6 +236,16 @@
 
         <div style="margin-top: 15px; font-size: 0.85rem; color: #64748b; text-align: center;" class="no-print">
           💡 <i>เคล็ดลับ: สามารถคลิกที่ช่องตัวเลขในตารางเพื่อแก้ไขเลข 0-4 หรือคลิกช่อง ผช.สิบเวร เพื่อเปิด/ปิดแถบสีเขียวได้โดยตรง</i>
+        </div>
+
+        <!-- Confirm and Publish Action Box (ภาพ 2: ปุ่มยืนยันด้านล่างตารางเพื่อส่งตารางไปยังภาพที่ 3) -->
+        <div class="confirm-publish-section no-print">
+          <button class="btn btn-confirm-publish" onclick="confirmAndPublishSchedule()">
+            <i class="fa-solid fa-circle-check"></i> ยืนยันและเผยแพร่ตารางไปยังหน้าบุคคลทั่วไป
+          </button>
+          <div class="confirm-publish-desc">
+            กดปุ่มนี้เพื่อยืนยันส่งตารางไปยังหน้าสำหรับบุคคลทั่วไป (ภาพที่ 3) พร้อมรับลิงก์สำหรับส่งต่อในกลุ่ม LINE และ QR Code สำหรับเปิดดูในโทรศัพท์
+          </div>
         </div>
 
       </div>
@@ -293,7 +322,7 @@
                 <select id="formRole" class="form-control" required>
                   <option value="บก.พัน">บก.พัน</option>
                   <option value="บก.ร้อย">🏢 บก.ร้อย (ยกเว้นเวร)</option>
-                  <option value="สื่อสาร">สื่อสาร</option>
+                  <option value="สื่อสาร">📻 สื่อสาร (ยกเว้นเวร)</option>
                   <option value="สวัสดิการ">สวัสดิการ</option>
                   <option value="คลังน้ำมัน">คลังน้ำมัน</option>
                   <option value="พัฒนากองร้อย">พัฒนากองร้อย</option>
@@ -364,14 +393,14 @@
             <select id="filterRole" class="form-control" onchange="renderPersonnelTable()">
               <option value="">-- ทุกหน้าที่ --</option>
               <option value="บก.พัน">บก.พัน</option>
-              <option value="บก.ร้อย">บก.ร้อย</option>
-              <option value="สื่อสาร">สื่อสาร</option>
+              <option value="บก.ร้อย">บก.ร้อย (ยกเว้นเวร)</option>
+              <option value="สื่อสาร">สื่อสาร (ยกเว้นเวร)</option>
               <option value="สวัสดิการ">สวัสดิการ</option>
               <option value="คลังน้ำมัน">คลังน้ำมัน</option>
               <option value="พัฒนากองร้อย">พัฒนากองร้อย</option>
               <option value="ยย.นอก">ยย.นอก</option>
-              <option value="โรงเลี้ยง">โรงเลี้ยง</option>
-              <option value="บ้านผบ.พัน">บ้านผบ.พัน</option>
+              <option value="โรงเลี้ยง">โรงเลี้ยง (ยกเว้นเวร)</option>
+              <option value="บ้านผบ.พัน">บ้านผบ.พัน (ยกเว้นเวร)</option>
             </select>
           </div>
           <div>
@@ -456,6 +485,64 @@
         </button>
       </div>
       <button class="btn btn-secondary btn-block" onclick="closeCellModal()">ยกเลิก</button>
+    </div>
+  </div>
+
+  <!-- Modal 3: Publish Success Modal (เผยแพร่ตารางเวรสำเร็จ) -->
+  <div class="modal-overlay" id="publishSuccessModal">
+    <div class="modal-box publish-modal-box">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px; color:#047857;">
+          <i class="fa-solid fa-circle-check" style="font-size:1.4rem;"></i>
+          <span>เผยแพร่ตารางเวรสำเร็จแล้ว!</span>
+        </div>
+        <button class="close-btn" onclick="closePublishModal()">&times;</button>
+      </div>
+      
+      <div class="publish-modal-body">
+        <p style="color:#475569; font-size:0.95rem; margin-bottom:12px;">
+          ตารางเวรชุดนี้พร้อมให้กำลังพลทุกคนเปิดดูและค้นหาชื่อได้ทันทีในหน้าบุคคลทั่วไป (ภาพที่ 3)
+        </p>
+
+        <div class="publish-badges" id="publishModalInfo" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        </div>
+
+        <!-- Share Link Box -->
+        <div class="share-box">
+          <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:6px; color:#1e293b;">
+            <i class="fa-solid fa-link"></i> ลิงก์สำหรับส่งต่อในกลุ่ม LINE / แชท:
+          </label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="publishModalLinkInput" class="form-control" readonly style="background:#f8fafc; font-size:0.88rem;">
+            <button class="btn btn-success" id="btnCopyLink" onclick="copyShareableLink()" style="white-space:nowrap;">
+              <i class="fa-solid fa-copy"></i> คัดลอกลิงก์
+            </button>
+          </div>
+          <small style="color:#64748b; margin-top:4px; display:block;">
+            💡 ส่งลิงก์นี้ใน LINE ให้กำลังพลเปิดในโทรศัพท์ ตารางจะบันทึกลงในเครื่องอัตโนมัติ
+          </small>
+        </div>
+
+        <!-- QR Code for Mobile Scanning -->
+        <div class="qr-box" style="margin-top:16px; text-align:center; padding:16px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+          <div style="font-weight:600; font-size:0.92rem; margin-bottom:8px; color:#0f172a;">
+            <i class="fa-solid fa-qrcode"></i> หรือสแกน QR Code ด้วยโทรศัพท์มือถือ
+          </div>
+          <img id="publishModalQrCode" src="" alt="QR Code" style="width:160px; height:160px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; padding:4px;">
+          <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">
+            เปิดกล้องมือถือสแกนภาพนี้เพื่อเปิดดูตารางเวรได้ทันที
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; gap:10px; margin-top:20px;">
+          <button class="btn btn-outline" onclick="closePublishModal()">
+            ปิดหน้าต่าง
+          </button>
+          <button class="btn btn-primary" onclick="openPublicPage()">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดดูหน้าบุคคลทั่วไปทันที
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

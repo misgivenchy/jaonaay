@@ -424,48 +424,6 @@
     .mil-table .highlight-name { background: #fef08a !important; }
     .mil-table .highlight-cell { background: #bbf7d0 !important; font-weight: 800; }
 
-    /* Quick names chips */
-    .quick-names-section {
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px dashed var(--border);
-    }
-    .quick-names-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .quick-names-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      max-height: 130px;
-      overflow-y: auto;
-      padding: 2px;
-    }
-    .name-chip {
-      background: #f1f5f9;
-      color: #334155;
-      border: 1px solid #cbd5e1;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.84rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-      font-family: 'Prompt', sans-serif;
-    }
-    .name-chip:hover, .name-chip.active {
-      background: var(--primary);
-      color: #ffffff;
-      border-color: var(--primary);
-      transform: translateY(-1px);
-    }
-
     /* Clear search button */
     .search-clear-btn {
       position: absolute;
@@ -522,7 +480,6 @@
       .info-badges { gap: 6px; }
       .info-badge { font-size: 0.8rem; padding: 4px 10px; }
       .search-input { font-size: 1rem; padding: 12px 38px 12px 38px; }
-      .name-chip { font-size: 0.8rem; padding: 4px 10px; }
     }
   </style>
 </head>
@@ -557,27 +514,17 @@
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-
-      <!-- Quick Name Chips (กดแตะชื่อเพื่อดูเวรทันที) -->
-      <div class="quick-names-section" id="quickNamesSection" style="display:none;">
-        <div class="quick-names-title">
-          <i class="fa-solid fa-hand-pointer"></i> หรือแตะชื่อเพื่อดูวันเวรทันที:
-        </div>
-        <div class="quick-names-list" id="quickNamesList">
-          <!-- Populated by JS -->
-        </div>
-      </div>
     </div>
 
     <!-- Results -->
     <div id="resultsContainer"></div>
 
-    <!-- Full Table Toggle -->
+    <!-- Full Table Section (เปิดมาเห็นตารางเลยทันที ไม่ต้องมีปุ่มซ่อน) -->
     <div class="full-table-card" id="fullTableSection" style="display:none;">
-      <button class="full-table-toggle" id="toggleTableBtn" onclick="toggleFullTable()">
-        <i class="fa-solid fa-table"></i> ดูตารางเวรเต็มรูปแบบ
-      </button>
-      <div id="fullTableContent" style="display:none; overflow-x:auto;"></div>
+      <div style="font-family:'Prompt',sans-serif; font-size:1.1rem; font-weight:600; color:var(--primary); margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-table-cells"></i> ตารางเวรภาพรวมทั้งหมด
+      </div>
+      <div id="fullTableContent" style="overflow-x:auto;"></div>
     </div>
 
     <!-- No Schedule State -->
@@ -607,8 +554,9 @@
     </div>
 
     <div class="footer">
-      ระบบจัดตารางเวรกองรักษาการ — ข้อมูลอัปเดตอัตโนมัติเมื่อผู้ดูแลเผยแพร่ตาราง
+      ระบบจัดตารางเวรกองรักษาการณ์ — ข้อมูลอัปเดตอัตโนมัติเมื่อผู้ดูแลเผยแพร่ตาราง
     </div>
+  </div>
   </div>
 
   <script>

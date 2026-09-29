@@ -48,7 +48,7 @@ let appState = {
   viewMode: "review", // 'review' | 'schedule'
   selectedPlatoons: ["หมวด 1", "หมวด 2"], // Array of selected platoons (minimum 2)
   sessionExcluded: [], // Array of personnel IDs temporarily excluded from current scheduling session
-  title: "เวรกองรักษาการ",
+  title: "เวรกองรักษาการณ์",
   startDay: 1,
   endDay: 10,
   monthIndex: 8, // 8 = กันยายน (0-indexed)
@@ -215,8 +215,8 @@ function renderReviewPersonnelTable() {
 
   // Calculate Guard Summary counts (exclude exempt roles like โรงเลี้ยง, บ้านผบ.พัน, บก.ร้อย, สื่อสาร)
   const activeFiltered = filtered.filter(p => !EXEMPT_ROLES.includes(p.role));
-  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") !== "ผช.สิบเวร");
-  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
+  const guardSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการณ์") !== "ผช.สิบเวร");
+  const asstSoldiers = activeFiltered.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "ผช.สิบเวร");
   
   const mainCount = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").length;
   const satCount = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").length;
@@ -249,7 +249,7 @@ function renderReviewPersonnelTable() {
   tbody.innerHTML = filtered.map((p, idx) => {
     const isExempt = EXEMPT_ROLES.includes(p.role);
     const isDev = (p.role === "พัฒนากองร้อย");
-    const isGuard = ((p.dutyType || "เวรกองรักษาการ") !== "ผช.สิบเวร");
+    const isGuard = ((p.dutyType || "เวรกองรักษาการณ์") !== "ผช.สิบเวร");
 
     // Position Badge description
     let posBadgeHtml = "";
@@ -292,7 +292,7 @@ function renderReviewPersonnelTable() {
         </td>
         <td>
           <select class="inline-select ${dutySelectClass}" onchange="updatePersonDutyType('${p.id}', this.value)" title="คลิกเพื่อเปลี่ยนประเภทเวร">
-            <option value="เวรกองรักษาการ" ${isGuard ? 'selected' : ''}>🛡️ กองรักษาการ</option>
+            <option value="เวรกองรักษาการณ์" ${isGuard ? 'selected' : ''}>🛡️ กองรักษาการณ์</option>
             <option value="ผช.สิบเวร" ${!isGuard ? 'selected' : ''}>🎖️ ผช.สิบเวร</option>
           </select>
         </td>
@@ -880,8 +880,100 @@ function compressPublishedData(d) {
   }
 }
 
+// URL Shortener Helper with multiple fallback services
+async function shortenUrl(longUrl) {
+  // Strategy 1: TinyURL via allorigins (fast, widely accessible)
+  try {
+    const enc = encodeURIComponent(longUrl);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const apiUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://tinyurl.com/api-create.php?url=' + enc)}`;
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const text = (await res.text()).trim();
+      if (text.startsWith("http://") || text.startsWith("https://")) {
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn("TinyURL shortener attempt failed:", e);
+  }
+
+  // Strategy 2: clck.ru via allorigins
+  try {
+    const enc = encodeURIComponent(longUrl);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const apiUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://clck.ru/--?url=' + enc)}`;
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const text = (await res.text()).trim();
+      if (text.startsWith("http://") || text.startsWith("https://")) {
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn("clck.ru shortener attempt failed:", e);
+  }
+
+  // Strategy 3: ulvis via allorigins
+  try {
+    const enc = encodeURIComponent(longUrl);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const apiUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://ulvis.net/api.php?url=' + enc)}`;
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const text = (await res.text()).trim();
+      if (text.startsWith("http://") || text.startsWith("https://")) {
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn("ulvis shortener attempt failed:", e);
+  }
+
+  return longUrl; // Fallback to long URL if offline or shorteners fail
+}
+
+// QR Code Renderer Helper (Pure client-side QRCode.js with API fallback)
+function renderModalQrCode(url) {
+  const container = document.getElementById("publishModalQrContainer");
+  if (!container) return;
+
+  if (typeof QRCode !== "undefined") {
+    container.innerHTML = "";
+    try {
+      new QRCode(container, {
+        text: url,
+        width: 160,
+        height: 160,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      return;
+    } catch (e) {
+      console.warn("QRCodeJS render failed, falling back to image API", e);
+    }
+  }
+
+  // Fallback to Image API
+  container.innerHTML = `<img id="publishModalQrCode" alt="QR Code" style="width:160px; height:160px; display:block; border-radius:6px;">`;
+  const img = document.getElementById("publishModalQrCode");
+  if (img) {
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=4&data=${encodeURIComponent(url)}`;
+    img.onerror = () => {
+      img.src = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(url)}`;
+    };
+  }
+}
+
 // Confirm and Publish Schedule to Public Page
-function confirmAndPublishSchedule() {
+async function confirmAndPublishSchedule() {
   savePublishedSchedule();
   
   let publishedObj = null;
@@ -905,22 +997,39 @@ function confirmAndPublishSchedule() {
   if (modal) {
     const elInfo = document.getElementById("publishModalInfo");
     if (elInfo) {
-      const totalSoldiers = (publishedObj.mainGuards || []).length + (publishedObj.saturdayGuards || []).length + (publishedObj.assistantGuards || []).length;
       elInfo.innerHTML = `
         <span class="info-badge date"><i class="fa-solid fa-calendar-day"></i> ${publishedObj.startDay} - ${publishedObj.endDay} ${publishedObj.monthName} ${publishedObj.yearBE}</span>
-        <span class="info-badge"><i class="fa-solid fa-users"></i> กำลังพล ${totalSoldiers} นาย</span>
       `;
     }
     
     const elLinkInput = document.getElementById("publishModalLinkInput");
-    if (elLinkInput) elLinkInput.value = publicUrl;
-    
-    const elQr = document.getElementById("publishModalQrCode");
-    if (elQr) {
-      elQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicUrl)}`;
+    const elStatus = document.getElementById("publishModalLinkStatus");
+    if (elLinkInput) elLinkInput.value = "กำลังสร้างลิงก์แบบย่อ...";
+    if (elStatus) {
+      elStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างลิงก์แบบย่อและ QR Code สำหรับแชร์...';
     }
     
+    // Render initial QR Code
+    renderModalQrCode(publicUrl);
     modal.classList.add("active");
+
+    // Asynchronously shorten URL
+    try {
+      const shortUrl = await shortenUrl(publicUrl);
+      if (elLinkInput) elLinkInput.value = shortUrl;
+      renderModalQrCode(shortUrl);
+      if (elStatus) {
+        if (shortUrl !== publicUrl) {
+          elStatus.innerHTML = '<span style="color:#16a34a; font-weight:600;"><i class="fa-solid fa-circle-check"></i> สร้างลิงก์ย่อและ QR Code สำเร็จแล้ว พร้อมคัดลอกส่งต่อใน LINE ได้ทันที</span>';
+        } else {
+          elStatus.innerHTML = '💡 ส่งลิงก์นี้ใน LINE ให้กำลังพลเปิดในโทรศัพท์ ตารางจะบันทึกลงในเครื่องอัตโนมัติ';
+        }
+      }
+    } catch(err) {
+      console.warn("Shorten flow error", err);
+      if (elLinkInput) elLinkInput.value = publicUrl;
+      renderModalQrCode(publicUrl);
+    }
   } else {
     alert("✅ เผยแพร่ตารางเวรไปยังหน้าบุคคลทั่วไปเรียบร้อยแล้ว!");
   }
@@ -1005,8 +1114,8 @@ function generateAndShowRoster() {
     return;
   }
 
-  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") !== "ผช.สิบเวร");
-  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการ") === "ผช.สิบเวร");
+  const guardSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการณ์") !== "ผช.สิบเวร");
+  const asstSoldiers = activeDutySoldiers.filter(p => (p.dutyType || "เวรกองรักษาการณ์") === "ผช.สิบเวร");
 
   const devGuards = guardSoldiers.filter(p => p.role === "พัฒนากองร้อย").map(p => p.name);
   const nonDevGuards = guardSoldiers.filter(p => p.role !== "พัฒนากองร้อย").map(p => p.name);
@@ -1209,7 +1318,13 @@ function renderPersonnelTable() {
     if (filterPlatoon && p.platoon !== filterPlatoon) return false;
     if (filterBatch && p.batch !== filterBatch) return false;
     if (filterRole && p.role !== filterRole) return false;
-    if (filterDutyType && (p.dutyType || "เวรกองรักษาการณ์") !== filterDutyType) return false;
+    if (filterDutyType) {
+      if (filterDutyType === "ผช.สิบเวร") {
+        if (p.dutyType !== "ผช.สิบเวร") return false;
+      } else {
+        if (p.dutyType === "ผช.สิบเวร") return false;
+      }
+    }
     if (filterRegion && (p.region || "") !== filterRegion) return false;
     if (filterStatus && (p.status || "ปกติ") !== filterStatus) return false;
     return true;

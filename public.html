@@ -570,7 +570,7 @@
     const DAY_NAMES_SHORT = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
     let publishedData = null;
-    let isTableVisible = false;
+    let isTableVisible = true;
 
     // Decompress helper for hash parameters #d=
     function decompressPublishedData(str) {
@@ -622,12 +622,21 @@
       }
     }
 
-    // Load data from URL hash #d= or localStorage
+    // Load data from URL hash #d=, query param ?d=, or localStorage
     function loadPublished() {
-      // 1. Check URL hash parameter #d= (เปิดผ่านลิงก์หรือสแกน QR Code จากโทรศัพท์)
+      // 1. Check URL hash parameter #d= or query parameter ?d=
+      let paramStr = "";
       if (window.location.hash && window.location.hash.startsWith("#d=")) {
-        const hashStr = window.location.hash.substring(3);
-        const decompressed = decompressPublishedData(hashStr);
+        paramStr = window.location.hash.substring(3);
+      } else {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("d")) {
+          paramStr = urlParams.get("d");
+        }
+      }
+
+      if (paramStr) {
+        const decompressed = decompressPublishedData(paramStr);
         if (decompressed) {
           publishedData = decompressed;
           try {
@@ -700,60 +709,25 @@
 
       // Populate info
       const d = publishedData;
-      document.getElementById("scheduleTitle").textContent = d.title || "ตารางเวร";
+      let title = d.title || "เวรกองรักษาการณ์";
+      if (title === "เวรกองรักษาการ") title = "เวรกองรักษาการณ์";
+      document.getElementById("scheduleTitle").textContent = title;
       document.getElementById("scheduleBadges").innerHTML = `
         <span class="info-badge date">
           <i class="fa-solid fa-calendar-day"></i>
           ${d.startDay} - ${d.endDay} ${d.monthName} ${d.yearBE}
         </span>
-        <span class="info-badge">
-          <i class="fa-solid fa-users"></i>
-          กำลังพล ${(d.mainGuards || []).length + (d.saturdayGuards || []).length + (d.assistantGuards || []).length} นาย
-        </span>
       `;
 
-      // Setup quick name chips
-      renderQuickNameChips();
+      // Render full table immediately on load
+      isTableVisible = true;
+      renderFullTable();
 
       // Setup search
       document.getElementById("searchInput").addEventListener("input", handleSearch);
 
       // Show initial empty state in results
       showEmptySearch();
-    }
-
-    function renderQuickNameChips() {
-      if (!publishedData) return;
-      const allNames = new Set([
-        ...(publishedData.mainGuards || []),
-        ...(publishedData.saturdayGuards || []),
-        ...(publishedData.assistantGuards || [])
-      ]);
-      const sorted = Array.from(allNames).sort((a, b) => a.localeCompare(b, 'th'));
-      const container = document.getElementById("quickNamesList");
-      const sec = document.getElementById("quickNamesSection");
-      if (!container || !sec) return;
-
-      if (sorted.length === 0) {
-        sec.style.display = "none";
-        return;
-      }
-
-      sec.style.display = "block";
-      container.innerHTML = sorted.map(name => `
-        <button type="button" class="name-chip" onclick="selectQuickName('${escapeHtml(name)}')">
-          ${escapeHtml(name)}
-        </button>
-      `).join("");
-    }
-
-    function selectQuickName(name) {
-      const input = document.getElementById("searchInput");
-      if (input) {
-        input.value = name;
-        handleSearch();
-        window.scrollTo({ top: input.offsetTop - 20, behavior: 'smooth' });
-      }
     }
 
     function clearSearch() {
@@ -770,8 +744,8 @@
         <div class="results-card">
           <div class="empty-state">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <p>พิมพ์ชื่อหรือแตะปุ่มชื่อด้านบนเพื่อดูวันเวร</p>
-            <p class="hint">ค้นหาได้ทั้งชื่อและนามสกุล</p>
+            <p>พิมพ์ชื่อหรือนามสกุลเพื่อดูวันที่มีเวร</p>
+            <p class="hint">ค้นหาได้ทั้งชื่อจริงและนามสกุล</p>
           </div>
         </div>
       `;
@@ -779,6 +753,7 @@
 
     function handleSearch() {
       const input = document.getElementById("searchInput");
+      if (!input) return;
       const clearBtn = document.getElementById("searchClearBtn");
       const query = (input.value || "").trim().toLowerCase();
 
@@ -786,18 +761,9 @@
         clearBtn.style.display = query ? "flex" : "none";
       }
 
-      // Update active state on name chips
-      const chips = document.querySelectorAll(".name-chip");
-      chips.forEach(chip => {
-        if (query && chip.textContent.trim().toLowerCase().includes(query)) {
-          chip.classList.add("active");
-        } else {
-          chip.classList.remove("active");
-        }
-      });
-
       if (!query || !publishedData) {
         showEmptySearch();
+        if (isTableVisible) renderFullTable();
         return;
       }
 
@@ -831,6 +797,7 @@
       });
 
       renderResults(results, query);
+      if (isTableVisible) renderFullTable();
     }
 
     function renderResults(results, query) {
@@ -873,7 +840,7 @@
       // Type badge
       let typeBadge = '';
       if (person.type === 'guard-main') {
-        typeBadge = '<span class="person-duty-badge badge-guard"><i class="fa-solid fa-shield-halved"></i> เวรกองรักษาการ</span>';
+        typeBadge = '<span class="person-duty-badge badge-guard"><i class="fa-solid fa-shield-halved"></i> เวรกองรักษาการณ์</span>';
       } else if (person.type === 'guard-sat') {
         typeBadge = '<span class="person-duty-badge badge-sat"><i class="fa-solid fa-calendar-day"></i> เวรวันเสาร์</span>';
       } else if (person.type === 'assistant') {
@@ -943,7 +910,7 @@
           } else {
             if (di.isSaturday) iconClass = 'sat';
             else if (di.isSunday) iconClass = 'sun';
-            dutyLabel = `เวรกองรักษาการ (ผลัดที่ ${dd.value})`;
+            dutyLabel = `เวรกองรักษาการณ์ (ผลัดที่ ${dd.value})`;
           }
 
           html += `

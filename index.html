@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจัดตารางเวรกองรักษาการและ ผช.สิบเวร</title>
+  <title>ระบบจัดตารางเวรกองรักษาการณ์และ ผช.สิบเวร</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -26,7 +26,7 @@
     <header class="app-header">
       <h1>
         <i class="fa-solid fa-shield-halved"></i>
-        ระบบจัดตารางเวรกองรักษาการ
+        ระบบจัดตารางเวรกองรักษาการณ์
         <span class="badge-tag">ระบบสุ่มเวรเฉลี่ยเท่ากัน</span>
       </h1>
       <div class="header-actions no-print">
@@ -103,7 +103,7 @@
         <div class="date-controls-bar">
           <div class="form-group" style="margin-bottom:0;">
             <label>หัวข้อตาราง</label>
-            <input type="text" id="titleInput" class="form-control" value="เวรกองรักษาการ">
+            <input type="text" id="titleInput" class="form-control" value="เวรกองรักษาการณ์">
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label>วันเริ่มต้น</label>
@@ -187,7 +187,7 @@
         </div>
         <div>
           <button class="btn btn-success btn-lg" onclick="generateAndShowRoster()">
-            <i class="fa-solid fa-play"></i> <b>สร้างตารางเวรกองรักษาการ</b>
+            <i class="fa-solid fa-play"></i> <b>สร้างตารางเวรกองรักษาการณ์</b>
           </button>
         </div>
       </div>
@@ -225,7 +225,7 @@
         <div class="schedule-paper" id="printableArea">
           <!-- Paper Title Header -->
           <h2 class="paper-title" id="paperTitle">
-            เวรกองรักษาการ ระหว่างวันที่ 1 - 10 กันยายน 2569
+            เวรกองรักษาการณ์ ระหว่างวันที่ 1 - 10 กันยายน 2569
           </h2>
 
           <!-- Generated Military Table -->
@@ -334,7 +334,7 @@
               <div>
                 <label>ประเภทเวรที่เข้า *</label>
                 <select id="formDutyType" class="form-control" required>
-                  <option value="เวรกองรักษาการ">🛡️ เวรกองรักษาการ</option>
+                  <option value="เวรกองรักษาการณ์">🛡️ เวรกองรักษาการณ์</option>
                   <option value="ผช.สิบเวร">🎖️ ผช.สิบเวร</option>
                 </select>
               </div>
@@ -406,7 +406,7 @@
           <div>
             <select id="filterDutyType" class="form-control" onchange="renderPersonnelTable()">
               <option value="">-- ทุกประเภทเวร --</option>
-              <option value="เวรกองรักษาการ">🛡️ กองรักษาการ</option>
+              <option value="เวรกองรักษาการณ์">🛡️ กองรักษาการณ์</option>
               <option value="ผช.สิบเวร">🎖️ ผช.สิบเวร</option>
             </select>
           </div>
@@ -510,15 +510,15 @@
         <!-- Share Link Box -->
         <div class="share-box">
           <label style="display:block; font-weight:600; font-size:0.9rem; margin-bottom:6px; color:#1e293b;">
-            <i class="fa-solid fa-link"></i> ลิงก์สำหรับส่งต่อในกลุ่ม LINE / แชท:
+            <i class="fa-solid fa-link"></i> ลิงก์แบบย่อสำหรับส่งต่อในกลุ่ม LINE / แชท:
           </label>
           <div style="display:flex; gap:8px;">
-            <input type="text" id="publishModalLinkInput" class="form-control" readonly style="background:#f8fafc; font-size:0.88rem;">
+            <input type="text" id="publishModalLinkInput" class="form-control" readonly style="background:#f8fafc; font-size:0.88rem; font-weight:500;">
             <button class="btn btn-success" id="btnCopyLink" onclick="copyShareableLink()" style="white-space:nowrap;">
               <i class="fa-solid fa-copy"></i> คัดลอกลิงก์
             </button>
           </div>
-          <small style="color:#64748b; margin-top:4px; display:block;">
+          <small id="publishModalLinkStatus" style="color:#64748b; margin-top:4px; display:block;">
             💡 ส่งลิงก์นี้ใน LINE ให้กำลังพลเปิดในโทรศัพท์ ตารางจะบันทึกลงในเครื่องอัตโนมัติ
           </small>
         </div>
@@ -528,7 +528,9 @@
           <div style="font-weight:600; font-size:0.92rem; margin-bottom:8px; color:#0f172a;">
             <i class="fa-solid fa-qrcode"></i> หรือสแกน QR Code ด้วยโทรศัพท์มือถือ
           </div>
-          <img id="publishModalQrCode" src="" alt="QR Code" style="width:160px; height:160px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; padding:4px;">
+          <div id="publishModalQrContainer" style="display:inline-flex; align-items:center; justify-content:center; padding:10px; background:#fff; border-radius:10px; border:1px solid #cbd5e1; min-width:180px; min-height:180px; margin:0 auto; box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <img id="publishModalQrCode" src="" alt="QR Code" style="width:160px; height:160px; display:block;">
+          </div>
           <div style="font-size:0.8rem; color:#64748b; margin-top:6px;">
             เปิดกล้องมือถือสแกนภาพนี้เพื่อเปิดดูตารางเวรได้ทันที
           </div>
@@ -546,6 +548,8 @@
     </div>
   </div>
 
+  <!-- QRCode.js CDN for reliable offline/instant QR Code generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- SheetJS CDN for Excel export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Main Script -->
